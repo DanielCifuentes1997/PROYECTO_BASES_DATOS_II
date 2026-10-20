@@ -1,0 +1,11 @@
+# Documentos personales y material de estudio (no se suben)
+Documentos/
+
+# Archivos que crea Python al ejecutar la interfaz
+__pycache__/
+*.pyc
+
+# Archivos temporales de Word y de Windows
+~$*
+Thumbs.db
+desktop.ini

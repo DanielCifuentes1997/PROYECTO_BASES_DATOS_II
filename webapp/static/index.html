@@ -1,0 +1,1636 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TurismoUQ · Paisaje Cultural Cafetero · Plataforma Oficial del Quindío</title>
+  <link rel="icon" href="data:,">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;0,800;1,600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            serif: ['"Playfair Display"', 'serif'],
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      background-color: #050c09;
+      color: #f4fbf7;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      overflow-x: hidden;
+    }
+    /* Fondo atmosférico Cordillera & Café */
+    .quindio-atmosphere {
+      background:
+        radial-gradient(circle at 15% 12%, rgba(217, 119, 6, 0.14), transparent 38%),
+        radial-gradient(circle at 85% 18%, rgba(16, 185, 129, 0.14), transparent 40%),
+        radial-gradient(circle at 50% 88%, rgba(180, 83, 9, 0.10), transparent 48%),
+        linear-gradient(180deg, #050c09 0%, #08130e 50%, #050b08 100%);
+    }
+    .luxury-card {
+      position: relative;
+      background: linear-gradient(145deg, rgba(14, 29, 22, 0.86), rgba(9, 19, 14, 0.92));
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      border: 1px solid rgba(245, 158, 11, 0.16);
+      box-shadow: 0 22px 50px -16px rgba(0, 0, 0, 0.75);
+      transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.3s ease, box-shadow 0.3s ease;
+    }
+    .luxury-card:hover {
+      border-color: rgba(245, 158, 11, 0.38);
+      box-shadow: 0 28px 65px -15px rgba(217, 119, 6, 0.16);
+    }
+    .aloj-card {
+      transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.35s ease, box-shadow 0.35s ease;
+    }
+    .aloj-card:hover {
+      transform: translateY(-6px);
+      border-color: rgba(245, 158, 11, 0.55);
+      box-shadow: 0 25px 55px -12px rgba(245, 158, 11, 0.22);
+    }
+    .aloj-card.seleccionado {
+      border-color: rgba(245, 158, 11, 0.85);
+      box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.45), 0 25px 55px -12px rgba(245, 158, 11, 0.28);
+    }
+    .aloj-card:hover .aloj-img { transform: scale(1.08); }
+    .aloj-img { transition: transform 0.65s cubic-bezier(0.16, 1, 0.3, 1); }
+    .sub-glass {
+      background: rgba(6, 14, 10, 0.72);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .role-pill { position: relative; transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1); }
+    .role-pill.active {
+      background: linear-gradient(135deg, #f59e0b 0%, #d97706 50%, #10b981 100%);
+      color: #04110b;
+      font-weight: 800;
+      box-shadow: 0 8px 28px -4px rgba(245, 158, 11, 0.5);
+    }
+    /* Pestañas internas (mismo estilo de las píldoras de municipios) */
+    .mpio-chip { transition: all 0.2s ease; }
+    .mpio-chip.active {
+      background: linear-gradient(135deg, #10b981, #059669);
+      color: #03120b;
+      font-weight: 700;
+      border-color: transparent;
+      box-shadow: 0 6px 20px -4px rgba(16, 185, 129, 0.45);
+    }
+    /* Tarjetas de recepción que funcionan como pestañas */
+    .kpi-tab { cursor: pointer; transition: all 0.2s ease; }
+    .kpi-tab.active {
+      border-color: rgba(245, 158, 11, 0.75);
+      box-shadow: 0 0 0 1px rgba(245, 158, 11, 0.5), 0 18px 40px -14px rgba(245, 158, 11, 0.35);
+    }
+    .paso-num {
+      width: 1.6rem; height: 1.6rem; border-radius: 9999px;
+      display: inline-flex; align-items: center; justify-content: center;
+      background: rgba(245, 158, 11, 0.18); border: 1px solid rgba(245, 158, 11, 0.45);
+      color: #fcd34d; font-weight: 800; font-size: 0.75rem;
+    }
+    details > summary { list-style: none; cursor: pointer; }
+    details > summary::-webkit-details-marker { display: none; }
+    details[open] .flecha { transform: rotate(90deg); }
+    .flecha { transition: transform 0.2s ease; }
+    button:disabled { opacity: 0.45; cursor: not-allowed; filter: grayscale(0.4); }
+    ::-webkit-scrollbar { width: 7px; height: 7px; }
+    ::-webkit-scrollbar-track { background: #050c09; }
+    ::-webkit-scrollbar-thumb { background: #1f3a2c; border-radius: 9999px; }
+    ::-webkit-scrollbar-thumb:hover { background: #f59e0b; }
+  </style>
+</head>
+<body class="quindio-atmosphere min-h-screen flex flex-col selection:bg-amber-500/30 selection:text-amber-200">
+
+  <!-- Luciérnagas doradas -->
+  <canvas id="fireflies-canvas" class="fixed inset-0 pointer-events-none z-0 opacity-60"></canvas>
+
+  <!-- ===================================================================== -->
+  <!-- BARRA SUPERIOR Y SELECTOR DE PERFIL                                   -->
+  <!-- ===================================================================== -->
+  <header class="sticky top-0 z-40 border-b border-amber-500/15 bg-[#050c09]/85 backdrop-blur-2xl">
+    <div class="max-w-[1600px] mx-auto px-6 py-3.5 flex flex-wrap items-center justify-between gap-4">
+      <div class="flex items-center gap-3.5">
+        <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-amber-400 via-amber-500 to-emerald-500 p-[1.5px] shadow-lg shadow-amber-500/20">
+          <div class="w-full h-full bg-[#06110c] rounded-[14px] flex items-center justify-center">
+            <i data-lucide="coffee" class="w-5 h-5 text-amber-400"></i>
+          </div>
+        </div>
+        <div>
+          <div class="flex items-center gap-2.5">
+            <span class="font-serif text-xl font-extrabold tracking-tight bg-gradient-to-r from-amber-200 via-amber-400 to-emerald-300 bg-clip-text text-transparent">TurismoUQ</span>
+            <span class="text-[11px] uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30 font-semibold">Paisaje Cultural Cafetero</span>
+          </div>
+          <p class="text-xs text-emerald-100/60">Fincas cafeteras, glampings y hoteles de los 12 municipios del Quindío</p>
+        </div>
+      </div>
+
+      <nav class="flex flex-wrap items-center gap-1.5 bg-[#091610]/90 p-1.5 rounded-2xl border border-amber-500/20 shadow-inner">
+        <span class="text-[11px] uppercase tracking-wider text-amber-200/60 px-2.5 font-semibold hidden xl:inline">Ver como:</span>
+        <button onclick="cambiarRol('cliente')" id="role-cliente" class="role-pill active flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold text-emerald-100/85">
+          <i data-lucide="compass" class="w-4 h-4"></i><span>Huésped</span>
+        </button>
+        <button onclick="cambiarRol('recepcion')" id="role-recepcion" class="role-pill flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold text-emerald-100/85">
+          <i data-lucide="concierge-bell" class="w-4 h-4"></i><span>Recepción</span>
+        </button>
+        <button onclick="cambiarRol('admin')" id="role-admin" class="role-pill flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold text-emerald-100/85">
+          <i data-lucide="building-2" class="w-4 h-4"></i><span>Administrador</span>
+        </button>
+        <button onclick="cambiarRol('gerente')" id="role-gerente" class="role-pill flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold text-emerald-100/85">
+          <i data-lucide="crown" class="w-4 h-4"></i><span>Gerente</span>
+        </button>
+        <button onclick="cambiarRol('auditor')" id="role-auditor" class="role-pill flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold text-emerald-100/85">
+          <i data-lucide="shield-check" class="w-4 h-4"></i><span>Auditor</span>
+        </button>
+      </nav>
+    </div>
+  </header>
+
+  <div id="toast-box" class="fixed bottom-6 right-6 z-50 hidden max-w-md rounded-2xl p-4 shadow-2xl border transition-all"></div>
+
+  <main class="relative z-10 flex-1 max-w-[1600px] w-full mx-auto px-6 py-6">
+
+    <!-- =================================================================== -->
+    <!-- HUÉSPED: explorar alojamientos y reservar                          -->
+    <!-- =================================================================== -->
+    <section id="vista-cliente" class="space-y-7">
+
+      <div class="relative rounded-[32px] overflow-hidden border border-amber-500/30 shadow-2xl min-h-[300px] flex items-end bg-gradient-to-br from-emerald-950 to-amber-950">
+        <img src="https://images.unsplash.com/photo-1501785888041-af3ef285b470?auto=format&fit=crop&w=1800&q=80"
+             alt="Paisaje Cultural Cafetero del Quindío" onerror="this.remove()"
+             class="absolute inset-0 w-full h-full object-cover object-center scale-105 brightness-[0.55]" />
+        <div class="absolute inset-0 bg-gradient-to-t from-[#050c09] via-[#050c09]/65 to-transparent"></div>
+        <div class="absolute inset-0 bg-gradient-to-r from-[#050c09]/90 via-[#050c09]/40 to-transparent"></div>
+
+        <div class="relative z-10 w-full p-7 lg:p-10 flex flex-col lg:flex-row lg:items-end justify-between gap-6">
+          <div class="space-y-3 max-w-2xl">
+            <div class="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-amber-500/20 border border-amber-400/40 text-amber-300 text-xs font-semibold backdrop-blur-md">
+              <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
+              <span>12 municipios · 60 alojamientos · 400 habitaciones</span>
+            </div>
+            <h1 class="font-serif text-3xl lg:text-5xl font-extrabold text-white leading-tight">
+              Vive la magia del <span class="text-amber-400 italic">Corazón Cafetero</span>
+            </h1>
+            <p class="text-sm lg:text-base text-emerald-50/85 leading-relaxed">
+              Elige un alojamiento, escoge tus fechas y te mostramos el precio exacto noche por noche según la temporada.
+            </p>
+          </div>
+
+          <div class="sub-glass backdrop-blur-xl p-4 rounded-2xl border border-amber-400/30 grid grid-cols-1 sm:grid-cols-3 gap-3 w-full lg:w-auto lg:min-w-[540px]">
+            <div>
+              <label class="block text-[11px] font-semibold uppercase tracking-wider text-amber-300 mb-1">Tipo de alojamiento</label>
+              <select id="cli-filtro-tipo" onchange="filtrarCatalogoCliente()" class="w-full rounded-xl bg-[#07130d] border border-emerald-500/30 px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-400">
+                <option value="">Todos</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-[11px] font-semibold uppercase tracking-wider text-amber-300 mb-1">Buscar por nombre</label>
+              <input type="text" id="cli-filtro-texto" oninput="filtrarCatalogoCliente()" placeholder="Mirador, Cafetal..." class="w-full rounded-xl bg-[#07130d] border border-emerald-500/30 px-3 py-2 text-xs text-white placeholder-emerald-200/40 focus:outline-none focus:border-amber-400" />
+            </div>
+            <div class="flex flex-col justify-end">
+              <div class="rounded-xl bg-amber-500/15 border border-amber-400/35 px-3 py-2 flex items-center justify-between">
+                <span class="text-xs text-amber-100">Resultados:</span>
+                <span id="cli-conteo-aloj" class="font-mono text-base font-extrabold text-amber-300">60</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2 overflow-x-auto pb-1" id="cli-municipios-pills"></div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-7 items-start">
+        <!-- Galería de alojamientos -->
+        <div class="lg:col-span-7">
+          <div id="cli-grid-alojamientos" class="grid grid-cols-1 md:grid-cols-2 gap-5 max-h-[920px] overflow-y-auto pr-1.5"></div>
+        </div>
+
+        <!-- Panel de reserva en 3 pasos -->
+        <div class="lg:col-span-5 luxury-card rounded-[28px] p-6 space-y-5 lg:sticky lg:top-24">
+          <div class="relative rounded-2xl overflow-hidden h-32 border border-amber-500/30 bg-gradient-to-br from-emerald-900 to-amber-900">
+            <img id="res-hero-img" src="https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=900&q=80" alt="Alojamiento" onerror="this.style.display='none'" class="w-full h-full object-cover brightness-75" />
+            <div class="absolute inset-0 bg-gradient-to-t from-[#06110c] via-[#06110c]/40 to-transparent"></div>
+            <div class="absolute bottom-3 left-4 right-4 flex items-end justify-between">
+              <div>
+                <span id="res-aloj-subtitulo" class="text-[11px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-amber-500 text-slate-950">Quindío</span>
+                <h2 id="res-aloj-titulo" class="font-serif text-xl font-bold text-white mt-1">Elige un alojamiento</h2>
+              </div>
+              <div id="res-aloj-rating" class="px-2.5 py-1 rounded-xl bg-black/60 backdrop-blur-md text-amber-300 font-bold text-xs border border-amber-400/30">★</div>
+            </div>
+          </div>
+
+          <!-- Paso 1 -->
+          <div class="space-y-2">
+            <div class="flex items-center gap-2 text-sm font-bold text-white"><span class="paso-num">1</span> Alojamiento y habitación</div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <select id="res-select-alojamiento" onchange="cargarHabitacionesReserva(this.value)" class="w-full rounded-xl bg-[#06110c] border border-emerald-500/30 px-3 py-2.5 text-xs text-white focus:border-amber-400 focus:outline-none"></select>
+              <select id="res-select-habitacion" onchange="cotizarEstadiaActual()" class="w-full rounded-xl bg-[#06110c] border border-amber-500/45 px-3 py-2.5 text-xs text-amber-200 font-semibold focus:border-amber-400 focus:outline-none"></select>
+            </div>
+            <details class="sub-glass rounded-xl px-3 py-2">
+              <summary class="text-xs text-emerald-200/80 flex items-center gap-1.5"><i data-lucide="chevron-right" class="flecha w-3.5 h-3.5"></i> <span id="res-servicios-titulo">Experiencias de este alojamiento</span></summary>
+              <div id="res-servicios-chips" class="flex flex-wrap gap-1.5 pt-2"></div>
+            </details>
+          </div>
+
+          <!-- Paso 2 -->
+          <div class="space-y-2">
+            <div class="flex items-center gap-2 text-sm font-bold text-white"><span class="paso-num">2</span> Fechas y huéspedes</div>
+            <div class="grid grid-cols-3 gap-3">
+              <div>
+                <label class="block text-xs text-emerald-200/80 mb-1">Llegada</label>
+                <input type="date" id="res-input-in" onchange="cotizarEstadiaActual()" class="w-full rounded-xl bg-[#06110c] border border-emerald-500/30 px-2.5 py-2 text-xs font-mono text-white focus:border-amber-400 focus:outline-none" />
+              </div>
+              <div>
+                <label class="block text-xs text-emerald-200/80 mb-1">Salida</label>
+                <input type="date" id="res-input-out" onchange="cotizarEstadiaActual()" class="w-full rounded-xl bg-[#06110c] border border-emerald-500/30 px-2.5 py-2 text-xs font-mono text-white focus:border-amber-400 focus:outline-none" />
+              </div>
+              <div>
+                <label class="block text-xs text-emerald-200/80 mb-1">Huéspedes</label>
+                <input type="number" id="res-input-huespedes" value="2" min="1" max="12" oninput="actualizarBotonConfirmar()" class="w-full rounded-xl bg-[#06110c] border border-emerald-500/30 px-3 py-2 text-xs font-mono text-white focus:border-amber-400 focus:outline-none" />
+              </div>
+            </div>
+            <div id="res-cotizacion-box" class="sub-glass rounded-2xl p-4 space-y-3 border border-emerald-500/20"></div>
+          </div>
+
+          <!-- Paso 3 -->
+          <div class="space-y-2">
+            <div class="flex items-center gap-2 text-sm font-bold text-white"><span class="paso-num">3</span> ¿Quién reserva?</div>
+            <div class="flex gap-2">
+              <input type="text" id="res-input-documento" placeholder="Número de documento" onkeydown="if(event.key==='Enter') buscarCliente()" class="flex-1 rounded-xl bg-[#06110c] border border-emerald-500/30 px-3 py-2.5 text-xs font-mono text-white focus:border-amber-400 focus:outline-none" />
+              <button onclick="buscarCliente()" class="px-4 py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/35 border border-amber-500/40 text-amber-300 text-xs font-bold">Buscar</button>
+            </div>
+            <div id="res-cliente-info"></div>
+            <div id="box-nuevo-cliente" class="hidden sub-glass p-4 rounded-2xl space-y-2.5 border border-amber-500/40">
+              <div class="text-xs font-bold text-amber-300">Registrar huésped nuevo</div>
+              <input type="text" id="nc-nombre" placeholder="Nombre completo" class="w-full rounded-xl bg-[#06110c] border border-emerald-500/30 px-3 py-2 text-xs text-white" />
+              <input type="email" id="nc-email" placeholder="correo@ejemplo.com" class="w-full rounded-xl bg-[#06110c] border border-emerald-500/30 px-3 py-2 text-xs text-white" />
+              <button onclick="guardarNuevoCliente()" class="w-full py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold text-xs transition">Registrar y continuar</button>
+            </div>
+          </div>
+
+          <div id="res-alerta-box" class="hidden"></div>
+
+          <div class="space-y-1.5">
+            <button id="btn-confirmar" onclick="confirmarReserva()" disabled class="w-full py-3.5 px-6 rounded-2xl bg-gradient-to-r from-amber-500 via-amber-400 to-emerald-400 hover:brightness-110 text-slate-950 font-extrabold text-sm flex items-center justify-center gap-2 shadow-xl shadow-amber-500/20 transition">
+              <i data-lucide="check-circle-2" class="w-4 h-4"></i><span>Confirmar reserva</span>
+            </button>
+            <p id="btn-confirmar-ayuda" class="text-center text-xs text-amber-200/70"></p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =================================================================== -->
+    <!-- RECEPCIÓN                                                           -->
+    <!-- =================================================================== -->
+    <section id="vista-recepcion" class="hidden space-y-6">
+      <div class="luxury-card rounded-3xl p-6 flex flex-wrap items-center justify-between gap-4">
+        <div class="flex items-center gap-4">
+          <div class="w-12 h-12 rounded-2xl bg-amber-500/15 border border-amber-500/35 flex items-center justify-center text-amber-400">
+            <i data-lucide="concierge-bell" class="w-6 h-6"></i>
+          </div>
+          <div>
+            <h2 class="font-serif text-2xl font-bold text-white">Recepción</h2>
+            <p class="text-xs text-emerald-100/70">Llegadas y salidas del día, huéspedes alojados y la cuenta de cada reserva.</p>
+          </div>
+        </div>
+        <div class="flex flex-wrap items-end gap-3">
+          <div>
+            <label class="block text-[11px] text-amber-200/80 font-semibold mb-1">Sede</label>
+            <select id="rec-select-alojamiento" onchange="cargarRecepcion()" class="rounded-xl bg-[#06110c] border border-amber-500/35 px-3.5 py-2.5 text-xs text-white font-semibold"></select>
+          </div>
+          <button onclick="irAReservaMostrador()" class="px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-emerald-500 text-slate-950 font-extrabold text-xs flex items-center gap-2 shadow-lg transition">
+            <i data-lucide="plus-circle" class="w-4 h-4"></i><span>Nueva reserva</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Tarjetas que funcionan como pestañas -->
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div id="rec-tab-llegadas" onclick="verRecepcion('llegadas')" class="kpi-tab active luxury-card rounded-2xl p-4">
+          <div class="flex items-center justify-between text-xs text-emerald-200/80"><span>Llegadas de hoy</span><i data-lucide="log-in" class="w-4 h-4 text-emerald-400"></i></div>
+          <div class="text-3xl font-extrabold font-mono text-emerald-400 mt-1" id="rec-kpi-llegadas">–</div>
+          <div class="text-[11px] text-emerald-200/50">Huéspedes que entran hoy</div>
+        </div>
+        <div id="rec-tab-alojados" onclick="verRecepcion('alojados')" class="kpi-tab luxury-card rounded-2xl p-4">
+          <div class="flex items-center justify-between text-xs text-emerald-200/80"><span>Alojados ahora</span><i data-lucide="bed-double" class="w-4 h-4 text-amber-300"></i></div>
+          <div class="text-3xl font-extrabold font-mono text-amber-300 mt-1" id="rec-kpi-alojados">–</div>
+          <div class="text-[11px] text-emerald-200/50">Estadías en curso</div>
+        </div>
+        <div id="rec-tab-salidas" onclick="verRecepcion('salidas')" class="kpi-tab luxury-card rounded-2xl p-4">
+          <div class="flex items-center justify-between text-xs text-emerald-200/80"><span>Salidas pendientes</span><i data-lucide="log-out" class="w-4 h-4 text-rose-300"></i></div>
+          <div class="text-3xl font-extrabold font-mono text-rose-300 mt-1" id="rec-kpi-salidas">–</div>
+          <div class="text-[11px] text-emerald-200/50">Salen hoy o ya debían salir</div>
+        </div>
+        <div id="rec-tab-proximas" onclick="verRecepcion('proximas')" class="kpi-tab luxury-card rounded-2xl p-4">
+          <div class="flex items-center justify-between text-xs text-emerald-200/80"><span>Próximos 7 días</span><i data-lucide="calendar-days" class="w-4 h-4 text-emerald-300"></i></div>
+          <div class="text-3xl font-extrabold font-mono text-white mt-1" id="rec-kpi-proximas">–</div>
+          <div class="text-[11px] text-emerald-200/50">Llegadas confirmadas</div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        <div class="lg:col-span-7 luxury-card rounded-3xl p-6 space-y-4">
+          <div class="flex flex-wrap items-center justify-between gap-3">
+            <h3 class="text-base font-bold text-white flex items-center gap-2">
+              <i data-lucide="calendar-clock" class="w-4 h-4 text-amber-400"></i><span id="rec-titulo-lista">Llegadas de hoy</span>
+            </h3>
+            <div class="relative">
+              <i data-lucide="search" class="w-4 h-4 text-emerald-200/50 absolute left-3 top-1/2 -translate-y-1/2"></i>
+              <input type="text" id="rec-input-busqueda" oninput="buscarRecepcion()" placeholder="Buscar nombre, cédula o # reserva" class="w-64 rounded-xl bg-[#06110c] border border-emerald-500/30 pl-9 pr-3 py-2 text-xs text-white" />
+            </div>
+          </div>
+          <div class="overflow-x-auto rounded-2xl border border-emerald-500/15 max-h-[620px]">
+            <table class="w-full text-left border-collapse text-xs">
+              <thead class="sticky top-0 bg-[#08150f] text-emerald-200/75 uppercase font-mono border-b border-emerald-500/20">
+                <tr>
+                  <th class="py-3 px-3"># Reserva</th>
+                  <th class="py-3 px-3">Huésped</th>
+                  <th class="py-3 px-3">Alojamiento</th>
+                  <th class="py-3 px-3">Fechas</th>
+                  <th class="py-3 px-3 text-center">Estado</th>
+                </tr>
+              </thead>
+              <tbody id="rec-tabla-body" class="divide-y divide-emerald-500/10"></tbody>
+            </table>
+          </div>
+          <p class="text-[11px] text-emerald-200/50">Haz clic en una reserva para ver su cuenta.</p>
+        </div>
+
+        <div class="lg:col-span-5 luxury-card rounded-3xl p-6 space-y-4 lg:sticky lg:top-24">
+          <div class="flex items-center justify-between border-b border-emerald-500/15 pb-3">
+            <div>
+              <span class="text-xs font-mono uppercase text-amber-400">Cuenta de la reserva</span>
+              <h3 class="text-base font-bold text-white" id="cuenta-titulo">Selecciona una reserva</h3>
+            </div>
+            <i data-lucide="receipt" class="w-5 h-5 text-emerald-400"></i>
+          </div>
+          <div id="cuenta-body" class="text-xs text-emerald-100/75 space-y-4">
+            <div class="sub-glass rounded-2xl p-6 text-center text-emerald-200/60">
+              Aquí verás las noches por temporada, los servicios consumidos, lo pagado y lo que falta por pagar.
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =================================================================== -->
+    <!-- ADMINISTRADOR DE ALOJAMIENTO                                        -->
+    <!-- =================================================================== -->
+    <section id="vista-admin" class="hidden space-y-6">
+      <div class="luxury-card rounded-3xl p-6 flex flex-wrap items-center justify-between gap-4">
+        <div class="flex items-center gap-4">
+          <div class="w-12 h-12 rounded-2xl bg-emerald-500/15 border border-emerald-500/35 flex items-center justify-center text-emerald-400">
+            <i data-lucide="hotel" class="w-6 h-6"></i>
+          </div>
+          <div>
+            <h2 class="font-serif text-2xl font-bold text-white" id="adm-titulo-alojamiento">Administrador del alojamiento</h2>
+            <p class="text-xs text-emerald-100/70">Estado de las habitaciones, precios por temporada y servicios que ofrece.</p>
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs text-amber-300 font-semibold mb-1">Alojamiento</label>
+          <select id="adm-select-alojamiento" onchange="cargarPanelAdmin(this.value)" class="rounded-xl bg-[#06110c] border border-amber-500/45 px-4 py-2.5 text-xs text-white font-bold"></select>
+        </div>
+      </div>
+
+      <div class="flex flex-wrap gap-2" data-tabs="admin">
+        <button data-tab="habitaciones" onclick="abrirTab('admin','habitaciones')" class="mpio-chip active px-4 py-2 rounded-full text-xs font-semibold border border-emerald-500/25 bg-[#08150f] text-emerald-100 flex items-center gap-1.5"><i data-lucide="bed-double" class="w-3.5 h-3.5"></i> Habitaciones</button>
+        <button data-tab="tarifas" onclick="abrirTab('admin','tarifas')" class="mpio-chip px-4 py-2 rounded-full text-xs font-semibold border border-emerald-500/25 bg-[#08150f] text-emerald-100 flex items-center gap-1.5"><i data-lucide="tags" class="w-3.5 h-3.5"></i> Tarifas</button>
+        <button data-tab="servicios" onclick="abrirTab('admin','servicios')" class="mpio-chip px-4 py-2 rounded-full text-xs font-semibold border border-emerald-500/25 bg-[#08150f] text-emerald-100 flex items-center gap-1.5"><i data-lucide="sparkles" class="w-3.5 h-3.5"></i> Servicios</button>
+      </div>
+
+      <div data-panel="admin-habitaciones" class="luxury-card rounded-3xl p-6 space-y-4">
+        <p class="text-xs text-emerald-100/70">
+          Una habitación en <span class="text-amber-300 font-semibold">mantenimiento</span> o <span class="text-rose-300 font-semibold">inactiva</span> no se puede reservar hasta que vuelva a estar disponible.
+        </p>
+        <div id="adm-lista-habitaciones" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
+      </div>
+
+      <div data-panel="admin-tarifas" class="hidden grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div class="lg:col-span-8 luxury-card rounded-3xl p-6 space-y-4">
+          <div class="flex flex-wrap items-end gap-3">
+            <div>
+              <label class="block text-xs text-emerald-200/80 mb-1">Habitación</label>
+              <select id="adm-tar-habitacion" onchange="renderTarifasAdmin()" class="rounded-xl bg-[#06110c] border border-emerald-500/30 px-3 py-2 text-xs text-white"></select>
+            </div>
+            <div>
+              <label class="block text-xs text-emerald-200/80 mb-1">Año</label>
+              <select id="adm-tar-anio" onchange="renderTarifasAdmin()" class="rounded-xl bg-[#06110c] border border-emerald-500/30 px-3 py-2 text-xs text-white"></select>
+            </div>
+          </div>
+          <div class="overflow-x-auto rounded-2xl border border-emerald-500/15">
+            <table class="w-full text-left border-collapse text-xs">
+              <thead class="bg-[#08150f] text-emerald-200/75 uppercase font-mono border-b border-emerald-500/20">
+                <tr>
+                  <th class="py-2.5 px-3">Temporada</th>
+                  <th class="py-2.5 px-3">Fechas</th>
+                  <th class="py-2.5 px-3 text-right">Precio por noche</th>
+                  <th class="py-2.5 px-3 text-right"></th>
+                </tr>
+              </thead>
+              <tbody id="adm-tabla-tarifas" class="divide-y divide-emerald-500/10 font-mono"></tbody>
+            </table>
+          </div>
+          <p class="text-[11px] text-emerald-200/55">Solo se pueden cambiar precios de temporadas que todavía no han empezado. Cada cambio queda en la bitácora del auditor.</p>
+        </div>
+        <div class="lg:col-span-4 luxury-card rounded-3xl p-6 space-y-4">
+          <h3 class="text-sm font-bold text-white flex items-center gap-2"><i data-lucide="percent" class="w-4 h-4 text-amber-400"></i> Ajuste general de precios</h3>
+          <p class="text-xs text-emerald-100/70">Sube o baja de una vez el precio de <strong>todas las habitaciones</strong> del alojamiento en las temporadas que aún no empiezan del año elegido.</p>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs text-emerald-200/80 mb-1">Año</label>
+              <select id="adm-ajuste-anio" class="w-full rounded-xl bg-[#06110c] border border-emerald-500/30 px-3 py-2 text-xs text-white"></select>
+            </div>
+            <div>
+              <label class="block text-xs text-emerald-200/80 mb-1">Porcentaje</label>
+              <input type="number" id="adm-ajuste-pct" value="5" step="1" class="w-full rounded-xl bg-[#06110c] border border-emerald-500/30 px-3 py-2 text-xs font-mono text-amber-300" />
+            </div>
+          </div>
+          <button onclick="aplicarAjusteTarifas()" class="w-full py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-emerald-500 text-slate-950 font-extrabold text-xs shadow-lg">Aplicar ajuste</button>
+          <p class="text-[11px] text-emerald-200/55">Usa un número negativo para bajar precios (por ejemplo -5).</p>
+        </div>
+      </div>
+
+      <div data-panel="admin-servicios" class="hidden luxury-card rounded-3xl p-6 space-y-3">
+        <p class="text-xs text-emerald-100/70">Servicios que recepción puede cargar a la cuenta de los huéspedes de este alojamiento.</p>
+        <div id="adm-lista-servicios" class="grid grid-cols-1 md:grid-cols-2 gap-2.5 text-xs"></div>
+      </div>
+    </section>
+
+    <!-- =================================================================== -->
+    <!-- GERENTE                                                             -->
+    <!-- =================================================================== -->
+    <section id="vista-gerente" class="hidden space-y-6">
+      <div class="luxury-card rounded-3xl p-6 flex flex-wrap items-center justify-between gap-4">
+        <div class="flex items-center gap-4">
+          <div class="w-12 h-12 rounded-2xl bg-amber-500/15 border border-amber-500/35 flex items-center justify-center text-amber-400">
+            <i data-lucide="crown" class="w-6 h-6"></i>
+          </div>
+          <div>
+            <h2 class="font-serif text-2xl font-bold text-white">Gerencia</h2>
+            <p class="text-xs text-emerald-100/70">Cómo le va al negocio y cuánto se le paga a cada alojamiento.</p>
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs text-amber-300 font-semibold mb-1">Año</label>
+          <select id="ger-anio" onchange="cargarGerente()" class="rounded-xl bg-[#06110c] border border-amber-500/45 px-4 py-2.5 text-xs text-white font-bold">
+            <option value="2024">2024</option>
+            <option value="2025" selected>2025</option>
+            <option value="2026">2026</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="flex flex-wrap gap-2" data-tabs="gerente">
+        <button data-tab="resumen" onclick="abrirTab('gerente','resumen')" class="mpio-chip active px-4 py-2 rounded-full text-xs font-semibold border border-emerald-500/25 bg-[#08150f] text-emerald-100 flex items-center gap-1.5"><i data-lucide="layout-dashboard" class="w-3.5 h-3.5"></i> Resumen</button>
+        <button data-tab="ocupacion" onclick="abrirTab('gerente','ocupacion')" class="mpio-chip px-4 py-2 rounded-full text-xs font-semibold border border-emerald-500/25 bg-[#08150f] text-emerald-100 flex items-center gap-1.5"><i data-lucide="grid-3x3" class="w-3.5 h-3.5"></i> Ocupación</button>
+        <button data-tab="ranking" onclick="abrirTab('gerente','ranking')" class="mpio-chip px-4 py-2 rounded-full text-xs font-semibold border border-emerald-500/25 bg-[#08150f] text-emerald-100 flex items-center gap-1.5"><i data-lucide="trophy" class="w-3.5 h-3.5"></i> Mejores por municipio</button>
+        <button data-tab="oportunidades" onclick="abrirTab('gerente','oportunidades')" class="mpio-chip px-4 py-2 rounded-full text-xs font-semibold border border-emerald-500/25 bg-[#08150f] text-emerald-100 flex items-center gap-1.5"><i data-lucide="flame" class="w-3.5 h-3.5"></i> Oportunidades</button>
+        <button data-tab="liquidacion" onclick="abrirTab('gerente','liquidacion')" class="mpio-chip px-4 py-2 rounded-full text-xs font-semibold border border-emerald-500/25 bg-[#08150f] text-emerald-100 flex items-center gap-1.5"><i data-lucide="banknote" class="w-3.5 h-3.5"></i> Liquidación mensual</button>
+      </div>
+
+      <!-- Resumen -->
+      <div data-panel="gerente-resumen" class="space-y-6">
+        <div class="grid grid-cols-2 lg:grid-cols-5 gap-4">
+          <div class="luxury-card rounded-2xl p-4 border-l-4 border-l-emerald-400">
+            <div class="text-xs text-emerald-200/70">Reservas</div>
+            <div class="text-2xl font-extrabold font-mono text-white mt-1" id="ger-kpi-reservas">…</div>
+            <div class="text-[11px] text-emerald-200/50">Sin contar canceladas</div>
+          </div>
+          <div class="luxury-card rounded-2xl p-4 border-l-4 border-l-amber-400">
+            <div class="text-xs text-emerald-200/70">Noches vendidas</div>
+            <div class="text-2xl font-extrabold font-mono text-amber-300 mt-1" id="ger-kpi-noches">…</div>
+            <div class="text-[11px] text-emerald-200/50">En los 60 alojamientos</div>
+          </div>
+          <div class="luxury-card rounded-2xl p-4 border-l-4 border-l-emerald-400">
+            <div class="text-xs text-emerald-200/70">Ingresos por alojamiento</div>
+            <div class="text-2xl font-extrabold font-mono text-emerald-400 mt-1" id="ger-kpi-aloj">…</div>
+            <div class="text-[11px] text-emerald-200/50">Millones de pesos</div>
+          </div>
+          <div class="luxury-card rounded-2xl p-4 border-l-4 border-l-amber-400">
+            <div class="text-xs text-emerald-200/70">Ingresos por servicios</div>
+            <div class="text-2xl font-extrabold font-mono text-white mt-1" id="ger-kpi-serv">…</div>
+            <div class="text-[11px] text-emerald-200/50">Millones de pesos</div>
+          </div>
+          <div class="luxury-card rounded-2xl p-4 border-l-4 border-l-emerald-400">
+            <div class="text-xs text-emerald-200/70">Satisfacción</div>
+            <div class="text-2xl font-extrabold font-mono text-amber-300 mt-1" id="ger-kpi-calif">…</div>
+            <div class="text-[11px] text-emerald-200/50">Promedio de reseñas (1 a 5)</div>
+          </div>
+        </div>
+        <div class="luxury-card rounded-3xl p-6 space-y-4">
+          <div>
+            <h3 class="text-base font-bold text-white">Facturación mes a mes</h3>
+            <p class="text-xs text-emerald-100/60">Lo que se cobró por noches de hospedaje (sin servicios), en millones de pesos, desde 2024 hasta el mes actual. Pasa el cursor sobre un punto para ver cuánto subió o bajó frente al mes anterior.</p>
+          </div>
+          <div class="h-[280px]"><canvas id="ger-chart-lag"></canvas></div>
+        </div>
+      </div>
+
+      <!-- Ocupación -->
+      <div data-panel="gerente-ocupacion" class="hidden luxury-card rounded-3xl p-6 space-y-4">
+        <div class="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <h3 class="text-base font-bold text-white">Ocupación por municipio y mes (<span class="ger-anio-label">2025</span>)</h3>
+            <p class="text-xs text-emerald-100/60">Porcentaje de las noches disponibles que se vendieron. Se notan los picos de enero, Semana Santa, mitad de año y diciembre.</p>
+          </div>
+          <div class="flex items-center gap-2 text-[11px] font-mono">
+            <span class="px-2 py-1 rounded" style="background:rgba(16,185,129,0.14)">&lt; 22%</span>
+            <span class="px-2 py-1 rounded" style="background:rgba(16,185,129,0.35)">22–34%</span>
+            <span class="px-2 py-1 rounded" style="background:rgba(16,185,129,0.72)">34–48%</span>
+            <span class="px-2 py-1 rounded text-[#050c09] font-bold" style="background:rgba(245,158,11,0.88)">≥ 48%</span>
+          </div>
+        </div>
+        <div id="ger-heatmap-ocupacion" class="overflow-x-auto"></div>
+      </div>
+
+      <!-- Ranking -->
+      <div data-panel="gerente-ranking" class="hidden luxury-card rounded-3xl p-6 space-y-4">
+        <div>
+          <h3 class="text-base font-bold text-white">Los 3 alojamientos que más facturan en cada municipio (<span class="ger-anio-label">2025</span>)</h3>
+          <p class="text-xs text-emerald-100/60">Elige un municipio o míralos todos.</p>
+        </div>
+        <div id="ger-ranking-municipios" class="flex flex-wrap gap-2"></div>
+        <div id="ger-ranking-cards" class="grid grid-cols-1 md:grid-cols-3 gap-4"></div>
+      </div>
+
+      <!-- Oportunidades -->
+      <div data-panel="gerente-oportunidades" class="hidden luxury-card rounded-3xl p-6 space-y-4">
+        <div>
+          <h3 class="text-base font-bold text-white">Buenos alojamientos que venden poco</h3>
+          <p class="text-xs text-emerald-100/60">Están entre los mejor calificados por los huéspedes pero entre los que menos noches venden. Son los mejores candidatos para promocionar. Solo se cuentan alojamientos con 25 reseñas o más.</p>
+        </div>
+        <div class="overflow-x-auto rounded-2xl border border-emerald-500/15">
+          <table class="w-full text-left border-collapse text-xs">
+            <thead class="bg-[#08150f] text-emerald-200/75 uppercase font-mono border-b border-emerald-500/20">
+              <tr>
+                <th class="py-2.5 px-3">Alojamiento</th>
+                <th class="py-2.5 px-3">Municipio</th>
+                <th class="py-2.5 px-3 text-center">Calificación</th>
+                <th class="py-2.5 px-3 text-right">Puesto en calidad</th>
+                <th class="py-2.5 px-3 text-right">Puesto en ventas</th>
+                <th class="py-2.5 px-3 text-right text-amber-300">Diferencia</th>
+              </tr>
+            </thead>
+            <tbody id="ger-tabla-promocion" class="divide-y divide-emerald-500/10 font-mono"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Liquidación -->
+      <div data-panel="gerente-liquidacion" class="hidden grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div class="lg:col-span-4 space-y-6">
+          <div class="luxury-card rounded-3xl p-6 space-y-4">
+            <h3 class="text-sm font-bold text-white flex items-center gap-2"><i data-lucide="banknote" class="w-4 h-4 text-amber-400"></i> Liquidar un mes</h3>
+            <p class="text-xs text-emerald-100/70">Por cada alojamiento suma lo que vendió en las estadías que terminaron ese mes, descuenta la comisión de TurismoUQ y calcula lo que se le debe pagar.</p>
+            <div>
+              <label class="block text-xs text-emerald-200/80 mb-1">Mes</label>
+              <select id="ger-liq-periodo" onchange="cargarLiquidaciones(this.value)" class="w-full rounded-xl bg-[#06110c] border border-emerald-500/30 px-3 py-2 text-xs text-white"></select>
+            </div>
+            <div id="ger-liq-acciones"></div>
+          </div>
+          <div class="luxury-card rounded-3xl p-6 space-y-3">
+            <h3 class="text-sm font-bold text-white">Meses ya liquidados</h3>
+            <div id="ger-liq-meses" class="space-y-2"></div>
+          </div>
+        </div>
+        <div class="lg:col-span-8 luxury-card rounded-3xl p-6 space-y-4">
+          <h3 class="text-base font-bold text-white" id="ger-liq-titulo">Detalle de la liquidación</h3>
+          <div class="overflow-x-auto max-h-[560px] rounded-2xl border border-emerald-500/15">
+            <table class="w-full text-left border-collapse text-xs font-mono">
+              <thead class="sticky top-0 bg-[#08150f] text-emerald-200/75 uppercase border-b border-emerald-500/20">
+                <tr>
+                  <th class="py-2.5 px-3">Alojamiento</th>
+                  <th class="py-2.5 px-3 text-right">Reservas</th>
+                  <th class="py-2.5 px-3 text-right">Vendido</th>
+                  <th class="py-2.5 px-3 text-right">Comisión</th>
+                  <th class="py-2.5 px-3 text-right text-emerald-300">A pagar</th>
+                </tr>
+              </thead>
+              <tbody id="ger-liq-tabla" class="divide-y divide-emerald-500/10"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =================================================================== -->
+    <!-- AUDITOR                                                             -->
+    <!-- =================================================================== -->
+    <section id="vista-auditor" class="hidden space-y-6">
+      <div class="luxury-card rounded-3xl p-6 flex flex-wrap items-center justify-between gap-4">
+        <div class="flex items-center gap-4">
+          <div class="w-12 h-12 rounded-2xl bg-emerald-500/15 border border-emerald-500/35 flex items-center justify-center text-emerald-400">
+            <i data-lucide="shield-check" class="w-6 h-6"></i>
+          </div>
+          <div>
+            <h2 class="font-serif text-2xl font-bold text-white">Auditoría</h2>
+            <p class="text-xs text-emerald-100/70">Quién cambió precios, cuándo y desde dónde, y los pagos recibidos.</p>
+          </div>
+        </div>
+        <button onclick="cargarAuditor()" class="px-4 py-2.5 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/35 text-emerald-300 text-xs font-bold flex items-center gap-2">
+          <i data-lucide="refresh-cw" class="w-4 h-4"></i><span>Actualizar</span>
+        </button>
+      </div>
+
+      <div class="flex flex-wrap gap-2" data-tabs="auditor">
+        <button data-tab="tarifas" onclick="abrirTab('auditor','tarifas')" class="mpio-chip active px-4 py-2 rounded-full text-xs font-semibold border border-emerald-500/25 bg-[#08150f] text-emerald-100 flex items-center gap-1.5"><i data-lucide="history" class="w-3.5 h-3.5"></i> Cambios de precios <span id="aud-total" class="font-mono opacity-70"></span></button>
+        <button data-tab="pagos" onclick="abrirTab('auditor','pagos')" class="mpio-chip px-4 py-2 rounded-full text-xs font-semibold border border-emerald-500/25 bg-[#08150f] text-emerald-100 flex items-center gap-1.5"><i data-lucide="credit-card" class="w-3.5 h-3.5"></i> Pagos</button>
+      </div>
+
+      <div data-panel="auditor-tarifas" class="luxury-card rounded-3xl p-6 space-y-4">
+        <p class="text-xs text-emerald-100/70">Cada cambio de precio lo registra automáticamente la base de datos (disparador de auditoría), aunque se haga por fuera de esta pantalla. Se muestran los 60 más recientes.</p>
+        <div class="overflow-x-auto max-h-[560px] rounded-2xl border border-emerald-500/15">
+          <table class="w-full text-left border-collapse text-xs">
+            <thead class="sticky top-0 bg-[#08150f] text-emerald-200/75 uppercase font-mono border-b border-emerald-500/20">
+              <tr>
+                <th class="py-2.5 px-3">Cuándo</th>
+                <th class="py-2.5 px-3">Qué tarifa</th>
+                <th class="py-2.5 px-3 text-right">Antes</th>
+                <th class="py-2.5 px-3 text-right">Después</th>
+                <th class="py-2.5 px-3 text-right">Cambio</th>
+                <th class="py-2.5 px-3">Quién</th>
+              </tr>
+            </thead>
+            <tbody id="aud-tabla-bitacora" class="divide-y divide-emerald-500/10"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div data-panel="auditor-pagos" class="hidden grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div class="lg:col-span-4 luxury-card rounded-3xl p-6 space-y-4">
+          <h3 class="text-sm font-bold text-white">Total recibido por medio de pago</h3>
+          <div id="aud-metodos-pago" class="space-y-2.5"></div>
+        </div>
+        <div class="lg:col-span-8 luxury-card rounded-3xl p-6 space-y-3">
+          <h3 class="text-sm font-bold text-white">Últimos 30 pagos</h3>
+          <div id="aud-lista-pagos" class="space-y-2 max-h-[520px] overflow-y-auto pr-1"></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="relative z-10 text-center text-[11px] text-emerald-200/40 py-5">
+    TurismoUQ · Bases de Datos II · Las reglas del negocio se ejecutan en Oracle (paquete PKG_TURISMOUQ y disparadores). Los permisos por perfil se aplican en la Entrega 3.
+  </footer>
+
+  <script>
+    // =====================================================================
+    // Utilidades
+    // =====================================================================
+    const FOTOS_POR_TIPO = {
+      'Finca Cafetera': [
+        'https://images.unsplash.com/photo-1587061949409-02df41d5e562?auto=format&fit=crop&w=900&q=80',
+        'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&w=900&q=80',
+        'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=900&q=80'
+      ],
+      'Glamping': [
+        'https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?auto=format&fit=crop&w=900&q=80',
+        'https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?auto=format&fit=crop&w=900&q=80',
+        'https://images.unsplash.com/photo-1533873984035-25970ab07461?auto=format&fit=crop&w=900&q=80'
+      ],
+      'Hotel': [
+        'https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?auto=format&fit=crop&w=900&q=80',
+        'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=900&q=80',
+        'https://images.unsplash.com/photo-1571896349842-33c89424de2d?auto=format&fit=crop&w=900&q=80'
+      ],
+      'Cabana': [
+        'https://images.unsplash.com/photo-1449158743715-0a90ebb6d2d8?auto=format&fit=crop&w=900&q=80',
+        'https://images.unsplash.com/photo-1510798831971-661eb04b3739?auto=format&fit=crop&w=900&q=80',
+        'https://images.unsplash.com/photo-1470770841072-f978cf4d019e?auto=format&fit=crop&w=900&q=80'
+      ],
+      'Hostal': [
+        'https://images.unsplash.com/photo-1555854877-bab0e564b8d5?auto=format&fit=crop&w=900&q=80',
+        'https://images.unsplash.com/photo-1520277739336-7bf67edfa768?auto=format&fit=crop&w=900&q=80'
+      ],
+      'Apartamento Turistico': [
+        'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&w=900&q=80',
+        'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=900&q=80'
+      ]
+    };
+    const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+
+    const STATE = {
+      alojamientos: [], tipos: [], municipios: [],
+      municipioSeleccionado: '', alojamientoReserva: null,
+      habitacionesActuales: [], cotizacion: null, clienteReserva: null,
+      vistaRecepcion: 'llegadas', reservaAbierta: null,
+      admin: null, gerente: null, rankingMunicipio: '', chartLag: null
+    };
+
+    function getFotoAlojamiento(aloj) {
+      const lista = FOTOS_POR_TIPO[aloj.tipo] || FOTOS_POR_TIPO['Finca Cafetera'];
+      return lista[aloj.id_alojamiento % lista.length];
+    }
+    function fmtCOP(n) {
+      if (n === null || n === undefined) return '—';
+      return '$ ' + Number(n).toLocaleString('es-CO', { maximumFractionDigits: 0 });
+    }
+    function fmtNum(n, dec = 0) {
+      if (n === null || n === undefined) return '—';
+      return Number(n).toLocaleString('es-CO', { minimumFractionDigits: dec, maximumFractionDigits: dec });
+    }
+    function fmtFecha(iso) {
+      if (!iso) return '—';
+      const [a, m, d] = iso.split('-');
+      return `${d}/${m}/${a}`;
+    }
+    function fmtPeriodo(iso) {
+      const [a, m] = iso.split('-');
+      return `${MESES[Number(m) - 1]} ${a}`;
+    }
+    function isoLocal(fecha) {
+      const z = new Date(fecha.getTime() - fecha.getTimezoneOffset() * 60000);
+      return z.toISOString().slice(0, 10);
+    }
+    function sumarDias(dias) {
+      const f = new Date(); f.setDate(f.getDate() + dias); return isoLocal(f);
+    }
+    function badgeEstado(estado) {
+      const color = estado === 'CONFIRMADA' ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/35'
+                  : estado === 'FINALIZADA' ? 'bg-amber-500/20 text-amber-300 border-amber-500/35'
+                  : 'bg-rose-500/20 text-rose-300 border-rose-500/35';
+      return `<span class="px-2.5 py-1 rounded-full text-[11px] font-mono font-bold border ${color}">${estado}</span>`;
+    }
+    async function api(url, cuerpo = null) {
+      const opciones = cuerpo === null ? {} : {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(cuerpo)
+      };
+      const res = await fetch(url, opciones);
+      return res.json();
+    }
+    function showToast(mensaje, ok = true) {
+      const box = document.getElementById('toast-box');
+      box.className = `fixed bottom-6 right-6 z-50 max-w-md rounded-2xl p-4 shadow-2xl border text-xs font-semibold flex items-center gap-3 ${
+        ok ? 'bg-[#082217] border-emerald-400 text-emerald-100' : 'bg-[#2a0a12] border-rose-400 text-rose-100'}`;
+      box.innerHTML = `<i data-lucide="${ok ? 'check-circle-2' : 'alert-circle'}" class="w-5 h-5 shrink-0 ${ok ? 'text-emerald-400' : 'text-rose-400'}"></i><span>${mensaje}</span>`;
+      box.classList.remove('hidden');
+      lucide.createIcons();
+      gsap.fromTo(box, { y: 20, opacity: 0 }, { y: 0, opacity: 1, duration: 0.3, ease: 'power2.out' });
+      clearTimeout(box._timer);
+      box._timer = setTimeout(() => box.classList.add('hidden'), 6000);
+    }
+
+    // Pestañas internas de cada vista
+    function abrirTab(grupo, tab) {
+      document.querySelectorAll(`[data-tabs="${grupo}"] [data-tab]`).forEach(b =>
+        b.classList.toggle('active', b.dataset.tab === tab));
+      document.querySelectorAll(`[data-panel^="${grupo}-"]`).forEach(p => {
+        const visible = p.dataset.panel === `${grupo}-${tab}`;
+        p.classList.toggle('hidden', !visible);
+        if (visible) gsap.fromTo(p, { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.3, ease: 'power2.out' });
+      });
+      if (grupo === 'gerente' && tab === 'resumen' && STATE.chartLag) STATE.chartLag.resize();
+      lucide.createIcons();
+    }
+
+    // Cambio de perfil
+    function cambiarRol(rol) {
+      ['cliente', 'recepcion', 'admin', 'gerente', 'auditor'].forEach(r => {
+        const el = document.getElementById(`vista-${r}`);
+        const btn = document.getElementById(`role-${r}`);
+        if (r === rol) {
+          el.classList.remove('hidden');
+          btn.classList.add('active');
+          gsap.fromTo(el, { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.38, ease: 'power2.out' });
+        } else {
+          el.classList.add('hidden');
+          btn.classList.remove('active');
+        }
+      });
+      if (rol === 'recepcion') cargarRecepcion();
+      else if (rol === 'admin') cargarPanelAdmin(document.getElementById('adm-select-alojamiento').value);
+      else if (rol === 'gerente') { cargarGerente(); cargarLiquidaciones(); }
+      else if (rol === 'auditor') cargarAuditor();
+      lucide.createIcons();
+    }
+
+    // =====================================================================
+    // Inicio
+    // =====================================================================
+    async function initApp() {
+      const data = await api('/api/init');
+      STATE.municipios = data.municipios;
+      STATE.tipos = data.tipos;
+      STATE.alojamientos = data.alojamientos;
+
+      renderMunicipioPills();
+      document.getElementById('cli-filtro-tipo').innerHTML =
+        `<option value="">Todos</option>` +
+        STATE.tipos.map(t => `<option value="${t.nombre}">${t.nombre}</option>`).join('');
+
+      const opciones = STATE.alojamientos.map(a =>
+        `<option value="${a.id_alojamiento}">${a.nombre} · ${a.municipio}</option>`).join('');
+      document.getElementById('res-select-alojamiento').innerHTML = opciones;
+      document.getElementById('rec-select-alojamiento').innerHTML = `<option value="">Todas las sedes</option>` + opciones;
+      document.getElementById('adm-select-alojamiento').innerHTML = opciones;
+
+      document.getElementById('res-input-in').value = sumarDias(7);
+      document.getElementById('res-input-out').value = sumarDias(10);
+
+      filtrarCatalogoCliente();
+      await cargarHabitacionesReserva(STATE.alojamientos[0].id_alojamiento);
+    }
+
+    // =====================================================================
+    // HUÉSPED
+    // =====================================================================
+    function renderMunicipioPills() {
+      const actual = STATE.municipioSeleccionado;
+      document.getElementById('cli-municipios-pills').innerHTML = `
+        <button onclick="seleccionarMunicipioChip('')" class="mpio-chip ${actual === '' ? 'active' : ''} shrink-0 px-4 py-2 rounded-full text-xs font-semibold border border-emerald-500/25 bg-[#08150f] text-emerald-100">Todos los municipios</button>
+        ${STATE.municipios.map(m => `
+          <button onclick="seleccionarMunicipioChip('${m.nombre}')" class="mpio-chip ${actual === m.nombre ? 'active' : ''} shrink-0 px-3.5 py-2 rounded-full text-xs font-semibold border border-emerald-500/20 bg-[#08150f] text-emerald-100/80 hover:border-amber-400/50">
+            ${m.nombre} <span class="opacity-60 font-mono ml-1">${m.total_alojamientos}</span>
+          </button>`).join('')}`;
+    }
+
+    function seleccionarMunicipioChip(mpio) {
+      STATE.municipioSeleccionado = mpio;
+      renderMunicipioPills();
+      filtrarCatalogoCliente();
+    }
+
+    function filtrarCatalogoCliente() {
+      const mpio = STATE.municipioSeleccionado;
+      const tipo = document.getElementById('cli-filtro-tipo').value;
+      const q = document.getElementById('cli-filtro-texto').value.trim().toLowerCase();
+      const filtrados = STATE.alojamientos.filter(a =>
+        (!mpio || a.municipio === mpio) && (!tipo || a.tipo === tipo) &&
+        (!q || a.nombre.toLowerCase().includes(q) || a.municipio.toLowerCase().includes(q)));
+
+      document.getElementById('cli-conteo-aloj').textContent = filtrados.length;
+      const grid = document.getElementById('cli-grid-alojamientos');
+      if (!filtrados.length) {
+        grid.innerHTML = `<div class="md:col-span-2 sub-glass rounded-3xl p-10 text-center text-emerald-200/60">No hay alojamientos con esos filtros.</div>`;
+        return;
+      }
+      grid.innerHTML = filtrados.map(a => `
+        <div id="aloj-card-${a.id_alojamiento}" onclick="seleccionarAlojamientoParaReserva(${a.id_alojamiento})" class="cursor-pointer luxury-card aloj-card ${STATE.alojamientoReserva === a.id_alojamiento ? 'seleccionado' : ''} rounded-3xl overflow-hidden flex flex-col justify-between group">
+          <div>
+            <div class="relative h-44 overflow-hidden bg-gradient-to-br from-emerald-900 to-amber-900">
+              <img src="${getFotoAlojamiento(a)}" alt="${a.nombre}" onerror="this.style.display='none'" class="aloj-img w-full h-full object-cover" loading="lazy" />
+              <div class="absolute inset-0 bg-gradient-to-t from-[#06110c] via-transparent to-black/30"></div>
+              <div class="absolute top-3 left-3">
+                <span class="px-3 py-1 rounded-full bg-black/65 backdrop-blur-md text-amber-300 border border-amber-400/30 text-[11px] font-bold">${a.tipo}</span>
+              </div>
+              <div class="absolute top-3 right-3 px-2.5 py-1 rounded-full bg-black/65 backdrop-blur-md text-amber-300 text-xs font-bold flex items-center gap-1">
+                ${a.calificacion ? `<span>★ ${a.calificacion}</span><span class="text-[10px] text-emerald-100/60">(${a.total_resenas})</span>` : `<span class="text-emerald-100/80">Sin reseñas</span>`}
+              </div>
+              <div class="absolute bottom-2.5 left-3 right-3 flex items-center justify-between">
+                <span class="text-xs font-semibold text-amber-200 flex items-center gap-1"><i data-lucide="map-pin" class="w-3.5 h-3.5 text-amber-400"></i> ${a.municipio}</span>
+                <span class="text-[11px] font-mono px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">${a.habitaciones_disponibles} habitaciones</span>
+              </div>
+            </div>
+            <div class="p-5 pb-3">
+              <h3 class="font-serif text-lg font-bold text-white group-hover:text-amber-300 transition">${a.nombre}</h3>
+            </div>
+          </div>
+          <div class="px-5 pb-5 pt-3 border-t border-emerald-500/15 flex items-center justify-between">
+            <div>
+              <span class="text-[10px] uppercase tracking-wider text-emerald-200/50 block">Por noche desde</span>
+              <span class="font-mono text-base font-extrabold text-emerald-300">${fmtCOP(a.precio_desde)}</span>
+            </div>
+            <span class="px-4 py-2 rounded-xl bg-amber-500/15 group-hover:bg-amber-500 text-amber-300 group-hover:text-slate-950 border border-amber-500/35 font-extrabold text-xs transition">Elegir →</span>
+          </div>
+        </div>`).join('');
+      lucide.createIcons();
+      gsap.fromTo('#cli-grid-alojamientos > div', { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.35, stagger: 0.03, ease: 'power2.out' });
+    }
+
+    async function seleccionarAlojamientoParaReserva(idAlojamiento) {
+      document.getElementById('res-select-alojamiento').value = idAlojamiento;
+      await cargarHabitacionesReserva(idAlojamiento);
+    }
+
+    async function cargarHabitacionesReserva(idAlojamiento) {
+      idAlojamiento = Number(idAlojamiento);
+      STATE.alojamientoReserva = idAlojamiento;
+      document.querySelectorAll('.aloj-card').forEach(c => c.classList.remove('seleccionado'));
+      const card = document.getElementById(`aloj-card-${idAlojamiento}`);
+      if (card) card.classList.add('seleccionado');
+
+      const aloj = STATE.alojamientos.find(a => a.id_alojamiento === idAlojamiento);
+      if (aloj) {
+        document.getElementById('res-aloj-subtitulo').textContent = `${aloj.municipio} · ${aloj.tipo}`;
+        document.getElementById('res-aloj-titulo').textContent = aloj.nombre;
+        document.getElementById('res-aloj-rating').textContent = aloj.calificacion ? `★ ${aloj.calificacion}` : 'Sin reseñas';
+        const img = document.getElementById('res-hero-img');
+        img.style.display = '';
+        img.src = getFotoAlojamiento(aloj);
+      }
+
+      const data = await api(`/api/alojamientos/${idAlojamiento}`);
+      STATE.habitacionesActuales = data.habitaciones;
+      const selHab = document.getElementById('res-select-habitacion');
+      selHab.innerHTML = data.habitaciones.map(h => `
+        <option value="${h.id_habitacion}" ${h.estado !== 'DISPONIBLE' ? 'disabled' : ''}>
+          Hab. ${h.numero} · ${h.tipo_habitacion} · hasta ${h.capacidad} pers.${h.estado !== 'DISPONIBLE' ? ' (en ' + h.estado.toLowerCase() + ')' : ''}
+        </option>`).join('');
+      const primeraLibre = data.habitaciones.find(h => h.estado === 'DISPONIBLE');
+      if (primeraLibre) selHab.value = primeraLibre.id_habitacion;
+
+      document.getElementById('res-servicios-titulo').textContent = `Experiencias de este alojamiento (${data.servicios.length})`;
+      document.getElementById('res-servicios-chips').innerHTML = data.servicios.map(s => `
+        <span class="px-2.5 py-1 rounded-lg bg-[#06110c] border border-emerald-500/20 text-[11px] text-emerald-200">✦ ${s.nombre} <strong class="font-mono text-amber-300">${fmtCOP(s.valor)}</strong></span>`).join('');
+
+      await cotizarEstadiaActual();
+    }
+
+    async function cotizarEstadiaActual() {
+      const idHab = Number(document.getElementById('res-select-habitacion').value);
+      const fechaIn = document.getElementById('res-input-in').value;
+      const fechaOut = document.getElementById('res-input-out').value;
+      const box = document.getElementById('res-cotizacion-box');
+      document.getElementById('res-alerta-box').classList.add('hidden');
+      STATE.cotizacion = null;
+
+      if (!idHab || !fechaIn || !fechaOut) {
+        box.innerHTML = `<div class="text-xs text-emerald-200/60">Elige una habitación disponible y tus fechas para ver el precio.</div>`;
+        actualizarBotonConfirmar();
+        return;
+      }
+      const data = await api('/api/reservas/cotizar', { id_habitacion: idHab, fecha_in: fechaIn, fecha_out: fechaOut });
+      if (!data.ok) {
+        box.innerHTML = `<div class="text-xs text-rose-300 flex items-center gap-2"><i data-lucide="alert-triangle" class="w-4 h-4 shrink-0 text-rose-400"></i><span>${data.mensaje}</span></div>`;
+        lucide.createIcons();
+        actualizarBotonConfirmar();
+        return;
+      }
+      STATE.cotizacion = data;
+      box.innerHTML = `
+        <div class="flex items-center justify-between">
+          <div>
+            <span class="text-xs text-emerald-200/70">Total por ${data.noches_totales} noche${data.noches_totales > 1 ? 's' : ''}</span>
+            <div class="text-2xl font-extrabold font-mono text-amber-300">${fmtCOP(data.valor_total)}</div>
+          </div>
+          <span class="px-3 py-1 rounded-full text-xs font-bold ${data.disponible ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/35' : 'bg-rose-500/20 text-rose-300 border border-rose-500/40'}">
+            ${data.disponible ? '✓ Libre en esas fechas' : '✕ Ocupada en esas fechas'}
+          </span>
+        </div>
+        <div class="space-y-1.5 pt-2 border-t border-emerald-500/15 text-xs">
+          <div class="text-emerald-200/70 font-semibold">Precio según la temporada de cada noche:</div>
+          ${data.tramos.map(t => `
+            <div class="flex items-center justify-between py-1.5 px-3 rounded-xl bg-[#050c09] border border-emerald-500/10">
+              <div>
+                <span class="font-bold text-white">${t.temporada}</span>
+                <span class="px-1.5 py-0.5 rounded text-[10px] font-mono ml-1 ${t.tipo_temporada === 'ALTA' ? 'bg-amber-500/20 text-amber-300' : 'bg-emerald-500/20 text-emerald-300'}">${t.tipo_temporada}</span>
+                <div class="text-[11px] text-emerald-200/60 font-mono">${t.noches} noche${t.noches > 1 ? 's' : ''} × ${fmtCOP(t.tarifa_noche)}</div>
+              </div>
+              <span class="font-mono font-bold text-emerald-300">${fmtCOP(t.subtotal)}</span>
+            </div>`).join('')}
+        </div>`;
+      lucide.createIcons();
+      actualizarBotonConfirmar();
+    }
+
+    function actualizarBotonConfirmar() {
+      const btn = document.getElementById('btn-confirmar');
+      const ayuda = document.getElementById('btn-confirmar-ayuda');
+      let falta = '';
+      if (!STATE.cotizacion) falta = 'Elige una habitación y fechas válidas.';
+      else if (!STATE.cotizacion.disponible) falta = 'La habitación ya está reservada en esas fechas. Prueba otras fechas u otra habitación.';
+      else if (!STATE.clienteReserva) falta = 'Falta el paso 3: indica el documento de quien reserva.';
+      btn.disabled = falta !== '';
+      ayuda.textContent = falta;
+    }
+
+    async function buscarCliente() {
+      const doc = document.getElementById('res-input-documento').value.trim();
+      const info = document.getElementById('res-cliente-info');
+      const nuevo = document.getElementById('box-nuevo-cliente');
+      STATE.clienteReserva = null;
+      if (!doc) {
+        info.innerHTML = `<div class="text-xs text-rose-300">Escribe un número de documento.</div>`;
+        nuevo.classList.add('hidden');
+        actualizarBotonConfirmar();
+        return;
+      }
+      const data = await api(`/api/clientes/buscar?documento=${encodeURIComponent(doc)}`);
+      if (data.encontrado) {
+        STATE.clienteReserva = data.cliente;
+        nuevo.classList.add('hidden');
+        info.innerHTML = `
+          <div class="rounded-xl px-3 py-2 bg-emerald-500/15 border border-emerald-500/35 text-xs text-emerald-100 flex items-center gap-2">
+            <i data-lucide="user-check" class="w-4 h-4 text-emerald-400"></i>
+            <span><strong>${data.cliente.nombre}</strong> · C.C. ${data.cliente.documento}</span>
+          </div>`;
+      } else {
+        info.innerHTML = `<div class="text-xs text-amber-200">Ese documento no está registrado. Completa estos datos:</div>`;
+        nuevo.classList.remove('hidden');
+      }
+      lucide.createIcons();
+      actualizarBotonConfirmar();
+    }
+
+    async function guardarNuevoCliente() {
+      const documento = document.getElementById('res-input-documento').value.trim();
+      const nombre = document.getElementById('nc-nombre').value.trim();
+      const email = document.getElementById('nc-email').value.trim();
+      const data = await api('/api/clientes/crear', { nombre, documento, email });
+      if (!data.ok) { showToast(data.mensaje, false); return; }
+      document.getElementById('nc-nombre').value = '';
+      document.getElementById('nc-email').value = '';
+      showToast(`Huésped ${data.cliente.nombre} registrado.`);
+      await buscarCliente();
+    }
+
+    async function confirmarReserva() {
+      const payload = {
+        id_cliente: STATE.clienteReserva.id_cliente,
+        id_habitacion: Number(document.getElementById('res-select-habitacion').value),
+        fecha_in: document.getElementById('res-input-in').value,
+        fecha_out: document.getElementById('res-input-out').value,
+        num_huespedes: Number(document.getElementById('res-input-huespedes').value)
+      };
+      const data = await api('/api/reservas/crear', payload);
+      const alerta = document.getElementById('res-alerta-box');
+      alerta.classList.remove('hidden');
+      if (!data.ok) {
+        alerta.innerHTML = `
+          <div class="rounded-2xl p-4 bg-rose-500/15 border border-rose-500/45 text-xs text-rose-100 flex items-start gap-2.5">
+            <i data-lucide="shield-alert" class="w-5 h-5 text-rose-400 shrink-0 mt-0.5"></i>
+            <div><div class="font-bold text-rose-300">No se pudo reservar</div><div class="mt-0.5">${data.mensaje}</div></div>
+          </div>`;
+        lucide.createIcons();
+        return;
+      }
+      const r = data.reserva;
+      alerta.innerHTML = `
+        <div class="rounded-2xl p-4 bg-emerald-500/15 border border-emerald-400/50 text-xs text-emerald-50 space-y-1.5">
+          <div class="font-extrabold text-emerald-300 text-sm flex items-center gap-2"><i data-lucide="award" class="w-4 h-4 text-amber-400"></i> ¡Reserva #${r.id_reserva} confirmada!</div>
+          <div><strong>Huésped:</strong> ${r.cliente}</div>
+          <div><strong>Dónde:</strong> ${r.alojamiento} (${r.municipio}) · Habitación ${r.hab_numero}</div>
+          <div><strong>Fechas:</strong> ${fmtFecha(r.fecha_checkin)} → ${fmtFecha(r.fecha_checkout)} · ${r.num_huespedes} huésped${r.num_huespedes > 1 ? 'es' : ''}</div>
+          <div><strong>Valor:</strong> <span class="font-mono font-bold text-amber-300">${fmtCOP(r.valor_total)}</span></div>
+        </div>`;
+      showToast(`Reserva #${r.id_reserva} registrada para ${r.cliente}.`);
+      lucide.createIcons();
+      await cotizarEstadiaActual();
+    }
+
+    // =====================================================================
+    // RECEPCIÓN
+    // =====================================================================
+    const TITULOS_RECEPCION = {
+      llegadas: 'Llegadas de hoy', alojados: 'Huéspedes alojados ahora',
+      salidas: 'Salidas pendientes', proximas: 'Llegadas de los próximos 7 días', todas: 'Resultados de la búsqueda'
+    };
+
+    async function cargarRecepcion() {
+      const idAloj = document.getElementById('rec-select-alojamiento').value;
+      const resumen = await api(`/api/recepcion/resumen${idAloj ? '?id_alojamiento=' + idAloj : ''}`);
+      ['llegadas', 'alojados', 'salidas', 'proximas'].forEach(v =>
+        document.getElementById(`rec-kpi-${v}`).textContent = fmtNum(resumen[v]));
+      await cargarListaRecepcion();
+    }
+
+    function verRecepcion(vista) {
+      STATE.vistaRecepcion = vista;
+      document.getElementById('rec-input-busqueda').value = '';
+      cargarListaRecepcion();
+    }
+
+    let temporizadorBusqueda = null;
+    function buscarRecepcion() {
+      clearTimeout(temporizadorBusqueda);
+      temporizadorBusqueda = setTimeout(() => {
+        const q = document.getElementById('rec-input-busqueda').value.trim();
+        STATE.vistaRecepcion = q ? 'todas' : 'llegadas';
+        cargarListaRecepcion();
+      }, 300);
+    }
+
+    async function cargarListaRecepcion() {
+      const vista = STATE.vistaRecepcion;
+      ['llegadas', 'alojados', 'salidas', 'proximas'].forEach(v =>
+        document.getElementById(`rec-tab-${v}`).classList.toggle('active', v === vista));
+      document.getElementById('rec-titulo-lista').textContent = TITULOS_RECEPCION[vista];
+
+      const params = new URLSearchParams({ vista });
+      const idAloj = document.getElementById('rec-select-alojamiento').value;
+      const q = document.getElementById('rec-input-busqueda').value.trim();
+      if (idAloj) params.append('id_alojamiento', idAloj);
+      if (q) params.append('busqueda', q);
+      const data = await api(`/api/recepcion/reservas?${params}`);
+
+      const tbody = document.getElementById('rec-tabla-body');
+      if (!data.reservas.length) {
+        tbody.innerHTML = `<tr><td colspan="5" class="py-10 text-center text-emerald-200/50">No hay reservas para mostrar aquí.</td></tr>`;
+        return;
+      }
+      const hoy = isoLocal(new Date());
+      tbody.innerHTML = data.reservas.map(r => {
+        const atrasada = r.estado === 'CONFIRMADA' && r.fecha_checkout < hoy;
+        return `
+          <tr onclick="abrirCuenta(${r.id_reserva})" class="cursor-pointer hover:bg-emerald-500/5 ${STATE.reservaAbierta === r.id_reserva ? 'bg-amber-500/10' : ''}">
+            <td class="py-3 px-3 font-mono font-bold text-amber-300">#${r.id_reserva}</td>
+            <td class="py-3 px-3"><div class="font-bold text-white">${r.cliente}</div><div class="text-[11px] text-emerald-200/60">C.C. ${r.documento}</div></td>
+            <td class="py-3 px-3"><div class="text-white">${r.alojamiento}</div><div class="text-[11px] font-mono text-emerald-300">Hab. ${r.habitaciones} · ${r.municipio}</div></td>
+            <td class="py-3 px-3 font-mono">
+              <div>${fmtFecha(r.fecha_checkin)} → ${fmtFecha(r.fecha_checkout)}</div>
+              <div class="text-[11px] ${atrasada ? 'text-rose-300 font-bold' : 'text-emerald-200/60'}">${atrasada ? 'Salida atrasada' : `${r.noches} noches · ${r.num_huespedes} huésp.`}</div>
+            </td>
+            <td class="py-3 px-3 text-center">${badgeEstado(r.estado)}</td>
+          </tr>`;
+      }).join('');
+    }
+
+    async function abrirCuenta(idReserva) {
+      STATE.reservaAbierta = idReserva;
+      document.querySelectorAll('#rec-tabla-body tr').forEach(tr => tr.classList.remove('bg-amber-500/10'));
+      const data = await api(`/api/recepcion/reservas/${idReserva}`);
+      if (!data.ok) { showToast(data.mensaje, false); return; }
+      const r = data.reserva;
+      const saldo = Math.max(Number(r.valor_total) - Number(r.pagado), 0);
+      document.getElementById('cuenta-titulo').innerHTML = `Reserva #${r.id_reserva} ${badgeEstado(r.estado)}`;
+
+      let acciones = '';
+      if (r.puede_checkout) {
+        acciones = `
+          <div class="sub-glass rounded-2xl p-3.5 space-y-2.5 border border-emerald-500/35">
+            <div class="font-bold text-white">Check-out</div>
+            <div class="text-emerald-200/70">Se cobra el saldo pendiente y la reserva queda finalizada.</div>
+            <div class="flex gap-2">
+              <select id="cuenta-metodo" class="flex-1 rounded-xl bg-[#06110c] border border-emerald-500/30 px-2.5 py-2 text-xs text-white">
+                <option value="TARJETA_CREDITO">Tarjeta de crédito</option>
+                <option value="TARJETA_DEBITO">Tarjeta débito</option>
+                <option value="EFECTIVO">Efectivo</option>
+                <option value="PSE">PSE</option>
+                <option value="TRANSFERENCIA">Transferencia</option>
+              </select>
+              <button onclick="hacerCheckout(${r.id_reserva})" class="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold text-xs">Hacer check-out</button>
+            </div>
+          </div>`;
+      } else if (r.puede_cancelar) {
+        acciones = `
+          <div class="sub-glass rounded-2xl p-3.5 space-y-2 border border-rose-500/30">
+            <div class="text-emerald-200/70">El huésped llega el <strong class="text-white">${fmtFecha(r.fecha_checkin)}</strong>. Antes de esa fecha la reserva se puede cancelar.</div>
+            <button onclick="cancelarReserva(${r.id_reserva})" class="w-full py-2 rounded-xl bg-rose-500/20 hover:bg-rose-500/35 border border-rose-500/40 text-rose-200 font-bold text-xs">Cancelar reserva</button>
+          </div>`;
+      } else {
+        acciones = `<div class="sub-glass rounded-2xl p-3 text-center text-emerald-200/60">Esta reserva está ${r.estado.toLowerCase()} y ya no admite cambios.</div>`;
+      }
+
+      const formServicio = r.estado === 'CONFIRMADA' && data.servicios_disponibles.length ? `
+        <div class="space-y-1.5"><div class="text-emerald-200/70 font-semibold">Cargar un servicio a la cuenta</div>
+        <div class="flex gap-2">
+          <select id="cuenta-servicio" class="flex-1 rounded-xl bg-[#06110c] border border-emerald-500/30 px-2.5 py-2 text-xs text-white">
+            ${data.servicios_disponibles.map(s => `<option value="${s.id_servicio}">${s.nombre} (${fmtCOP(s.valor)})</option>`).join('')}
+          </select>
+          <input type="number" id="cuenta-cantidad" value="1" min="1" max="20" class="w-16 rounded-xl bg-[#06110c] border border-emerald-500/30 px-2 py-2 text-xs font-mono text-white" />
+          <button onclick="cargarServicio(${r.id_reserva})" class="px-3 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold text-xs">Agregar</button>
+        </div></div>` : '';
+
+      document.getElementById('cuenta-body').innerHTML = `
+        <div class="space-y-1">
+          <div class="text-sm font-bold text-white">${r.cliente} <span class="font-normal text-emerald-200/60">· C.C. ${r.documento}</span></div>
+          <div class="font-mono text-emerald-200/80">${fmtFecha(r.fecha_checkin)} → ${fmtFecha(r.fecha_checkout)} · ${r.num_huespedes} huésped${r.num_huespedes > 1 ? 'es' : ''}</div>
+        </div>
+
+        <details open class="sub-glass rounded-xl p-3">
+          <summary class="font-bold text-emerald-300 flex items-center gap-1.5"><i data-lucide="chevron-right" class="flecha w-3.5 h-3.5"></i> Alojamiento por temporada (${data.estadia.length})</summary>
+          <div class="space-y-1.5 pt-2">
+            ${data.estadia.map(e => `
+              <div class="flex justify-between font-mono">
+                <span>Hab. ${e.hab_numero} · ${e.temporada} <span class="text-emerald-200/60">(${e.noches} × ${fmtCOP(e.valor_noche_aplicado)})</span></span>
+                <span class="text-emerald-300 font-bold">${fmtCOP(e.subtotal)}</span>
+              </div>`).join('')}
+          </div>
+        </details>
+
+        <details ${data.consumos.length ? 'open' : ''} class="sub-glass rounded-xl p-3">
+          <summary class="font-bold text-amber-300 flex items-center gap-1.5"><i data-lucide="chevron-right" class="flecha w-3.5 h-3.5"></i> Servicios consumidos (${data.consumos.length})</summary>
+          <div class="space-y-1.5 pt-2">
+            ${data.consumos.length ? data.consumos.map(c => `
+              <div class="flex justify-between font-mono">
+                <span>${c.servicio} <span class="text-emerald-200/60">(${c.cantidad} × ${fmtCOP(c.valor_unitario)})</span></span>
+                <span class="text-amber-300 font-bold">${fmtCOP(c.valor_total)}</span>
+              </div>`).join('') : `<div class="text-emerald-200/50 italic">Sin servicios todavía.</div>`}
+          </div>
+        </details>
+
+        ${formServicio}
+
+        <div class="grid grid-cols-3 gap-2 font-mono text-center">
+          <div class="sub-glass rounded-xl p-2.5"><div class="text-[11px] text-emerald-200/60">Total</div><div class="font-bold text-white">${fmtCOP(r.valor_total)}</div></div>
+          <div class="sub-glass rounded-xl p-2.5"><div class="text-[11px] text-emerald-200/60">Pagado</div><div class="font-bold text-emerald-300">${fmtCOP(r.pagado)}</div></div>
+          <div class="sub-glass rounded-xl p-2.5"><div class="text-[11px] text-emerald-200/60">Por pagar</div><div class="font-bold ${saldo > 0 ? 'text-amber-300' : 'text-emerald-300'}">${fmtCOP(saldo)}</div></div>
+        </div>
+
+        ${acciones}`;
+      lucide.createIcons();
+      cargarListaRecepcion();
+    }
+
+    async function cargarServicio(idReserva) {
+      const id_servicio = Number(document.getElementById('cuenta-servicio').value);
+      const cantidad = Number(document.getElementById('cuenta-cantidad').value);
+      const data = await api(`/api/recepcion/reservas/${idReserva}/servicios`, { id_servicio, cantidad });
+      if (!data.ok) { showToast(data.mensaje, false); return; }
+      showToast('Servicio agregado a la cuenta.');
+      abrirCuenta(idReserva);
+    }
+
+    async function hacerCheckout(idReserva) {
+      if (!confirm(`¿Hacer el check-out de la reserva #${idReserva}? Se cobrará el saldo pendiente.`)) return;
+      const metodo_pago = document.getElementById('cuenta-metodo').value;
+      const data = await api(`/api/recepcion/reservas/${idReserva}/checkout`, { metodo_pago });
+      if (!data.ok) { showToast(data.mensaje, false); return; }
+      showToast(`Check-out de la reserva #${idReserva} realizado.`);
+      await cargarRecepcion();
+      abrirCuenta(idReserva);
+    }
+
+    async function cancelarReserva(idReserva) {
+      if (!confirm(`¿Cancelar la reserva #${idReserva}? La habitación quedará libre en esas fechas.`)) return;
+      const data = await api(`/api/recepcion/reservas/${idReserva}/cancelar`, {});
+      if (!data.ok) { showToast(data.mensaje, false); return; }
+      showToast(`Reserva #${idReserva} cancelada.`);
+      await cargarRecepcion();
+      abrirCuenta(idReserva);
+    }
+
+    function irAReservaMostrador() {
+      const idAloj = document.getElementById('rec-select-alojamiento').value;
+      cambiarRol('cliente');
+      if (idAloj) seleccionarAlojamientoParaReserva(idAloj);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // =====================================================================
+    // ADMINISTRADOR
+    // =====================================================================
+    async function cargarPanelAdmin(idAlojamiento) {
+      const aloj = STATE.alojamientos.find(a => a.id_alojamiento === Number(idAlojamiento));
+      if (aloj) document.getElementById('adm-titulo-alojamiento').textContent = `${aloj.nombre} · ${aloj.municipio}`;
+      const data = await api(`/api/alojamientos/${idAlojamiento}`);
+      STATE.admin = data;
+
+      renderHabitacionesAdmin();
+
+      const selHab = document.getElementById('adm-tar-habitacion');
+      const habPrevia = selHab.value;
+      selHab.innerHTML = data.habitaciones.map(h =>
+        `<option value="${h.id_habitacion}">Hab. ${h.numero} · ${h.tipo_habitacion}</option>`).join('');
+      if (data.habitaciones.some(h => String(h.id_habitacion) === habPrevia)) selHab.value = habPrevia;
+
+      const anios = [...new Set(data.tarifas.map(t => t.anio))].sort();
+      const anioFuturo = anios.find(a => data.tarifas.some(t => t.anio === a && t.editable)) || anios[anios.length - 1];
+      const selAnio = document.getElementById('adm-tar-anio');
+      const anioPrevio = selAnio.value;
+      selAnio.innerHTML = anios.map(a => `<option value="${a}">${a}</option>`).join('');
+      selAnio.value = anios.includes(Number(anioPrevio)) ? anioPrevio : anioFuturo;
+      document.getElementById('adm-ajuste-anio').innerHTML = anios
+        .filter(a => data.tarifas.some(t => t.anio === a && t.editable))
+        .map(a => `<option value="${a}">${a}</option>`).join('');
+
+      renderTarifasAdmin();
+
+      document.getElementById('adm-lista-servicios').innerHTML = data.servicios.map(s => `
+        <div class="sub-glass rounded-xl p-3.5 flex items-center justify-between">
+          <span class="font-semibold text-white">${s.nombre}</span>
+          <span class="font-mono font-bold text-amber-300">${fmtCOP(s.valor)}</span>
+        </div>`).join('');
+      lucide.createIcons();
+    }
+
+    function renderHabitacionesAdmin() {
+      const estilos = {
+        DISPONIBLE: 'bg-emerald-500 text-slate-950 shadow-lg shadow-emerald-500/25',
+        MANTENIMIENTO: 'bg-amber-500 text-slate-950 shadow-lg shadow-amber-500/25',
+        INACTIVA: 'bg-rose-500 text-slate-950 shadow-lg shadow-rose-500/25'
+      };
+      const etiquetas = { DISPONIBLE: 'Disponible', MANTENIMIENTO: 'Mantenimiento', INACTIVA: 'Inactiva' };
+      document.getElementById('adm-lista-habitaciones').innerHTML = STATE.admin.habitaciones.map(h => `
+        <div class="sub-glass rounded-2xl p-4 space-y-3">
+          <div class="flex items-center justify-between">
+            <div class="font-bold text-white text-sm">Habitación ${h.numero} <span class="text-xs font-mono text-amber-300 ml-1">${h.tipo_habitacion}</span></div>
+            ${h.ocupada_hoy ? `<span class="text-[11px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/35">Ocupada hoy</span>` : `<span class="text-[11px] text-emerald-200/50">Libre hoy</span>`}
+          </div>
+          <div class="text-xs text-emerald-200/60">Hasta ${h.capacidad} personas · ${fmtCOP(h.tarifa_baja)} a ${fmtCOP(h.tarifa_alta)} por noche</div>
+          <div class="flex gap-1.5">
+            ${['DISPONIBLE', 'MANTENIMIENTO', 'INACTIVA'].map(e => `
+              <button onclick="cambiarEstadoHabitacion(${h.id_habitacion}, '${e}', '${h.numero}', '${h.estado}')" class="flex-1 px-2 py-1.5 rounded-xl text-xs font-bold transition ${h.estado === e ? estilos[e] : 'bg-white/5 text-emerald-200/70 hover:bg-white/10'}">${etiquetas[e]}</button>`).join('')}
+          </div>
+        </div>`).join('');
+    }
+
+    function renderTarifasAdmin() {
+      const idHab = Number(document.getElementById('adm-tar-habitacion').value);
+      const anio = Number(document.getElementById('adm-tar-anio').value);
+      const filas = STATE.admin.tarifas.filter(t => t.id_habitacion === idHab && t.anio === anio);
+      document.getElementById('adm-tabla-tarifas').innerHTML = filas.map(t => `
+        <tr class="hover:bg-emerald-500/5">
+          <td class="py-2.5 px-3">
+            <span class="font-bold text-white font-sans">${t.temporada}</span>
+            <span class="px-2 py-0.5 rounded text-[10px] ml-1 ${t.tipo_temporada === 'ALTA' ? 'bg-amber-500/20 text-amber-300' : 'bg-emerald-500/20 text-emerald-300'}">${t.tipo_temporada}</span>
+          </td>
+          <td class="py-2.5 px-3 text-emerald-200/60">${fmtFecha(t.fecha_inicio)} → ${fmtFecha(t.fecha_fin)}</td>
+          <td class="py-2.5 px-3 text-right">
+            ${t.editable
+              ? `<input type="number" id="tar-input-${t.id_tarifa}" value="${t.valor_noche}" step="1000" min="1000" class="w-32 rounded-lg bg-[#06110c] border border-emerald-500/30 px-2.5 py-1 text-right text-amber-300 font-bold" />`
+              : `<span class="text-white">${fmtCOP(t.valor_noche)}</span>`}
+          </td>
+          <td class="py-2.5 px-3 text-right">
+            ${t.editable
+              ? `<button onclick="guardarTarifa(${t.id_tarifa})" class="px-3 py-1 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/35 border border-emerald-500/40 text-emerald-200 text-xs font-semibold font-sans">Guardar</button>`
+              : `<span class="text-[11px] text-emerald-200/50 font-sans flex items-center justify-end gap-1"><i data-lucide="lock" class="w-3 h-3"></i> Ya empezó</span>`}
+          </td>
+        </tr>`).join('') || `<tr><td colspan="4" class="py-8 text-center text-emerald-200/50">Sin tarifas para mostrar.</td></tr>`;
+      lucide.createIcons();
+    }
+
+    async function cambiarEstadoHabitacion(idHab, estado, numero, estadoActual) {
+      if (estado === estadoActual) return;
+      if (estado !== 'DISPONIBLE' &&
+          !confirm(`¿Poner la habitación ${numero} en ${estado.toLowerCase()}? Nadie podrá reservarla mientras tanto.`)) return;
+      const data = await api(`/api/admin/habitaciones/${idHab}/estado`, { estado });
+      if (!data.ok) { showToast(data.mensaje, false); return; }
+      showToast(`Habitación ${numero}: ${estado.toLowerCase()}.`);
+      cargarPanelAdmin(document.getElementById('adm-select-alojamiento').value);
+    }
+
+    async function guardarTarifa(idTarifa) {
+      const valor_noche = Number(document.getElementById(`tar-input-${idTarifa}`).value);
+      const data = await api(`/api/admin/tarifas/${idTarifa}`, { valor_noche });
+      if (!data.ok) { showToast(data.mensaje, false); return; }
+      showToast('Precio actualizado. El cambio quedó registrado en la auditoría.');
+      cargarPanelAdmin(document.getElementById('adm-select-alojamiento').value);
+    }
+
+    async function aplicarAjusteTarifas() {
+      const idAloj = Number(document.getElementById('adm-select-alojamiento').value);
+      const anio = Number(document.getElementById('adm-ajuste-anio').value);
+      const porcentaje = Number(document.getElementById('adm-ajuste-pct').value);
+      if (!anio) { showToast('Este alojamiento no tiene temporadas futuras para ajustar.', false); return; }
+      const aloj = STATE.alojamientos.find(a => a.id_alojamiento === idAloj);
+      if (!confirm(`¿${porcentaje >= 0 ? 'Subir' : 'Bajar'} ${Math.abs(porcentaje)}% todos los precios de ${aloj.nombre} en las temporadas de ${anio} que aún no empiezan?`)) return;
+      const data = await api('/api/admin/tarifas-ajuste', { id_alojamiento: idAloj, anio, porcentaje });
+      if (!data.ok) { showToast(data.mensaje, false); return; }
+      showToast(`Se ajustaron ${data.afectadas} precios. Quedaron en la auditoría.`);
+      cargarPanelAdmin(idAloj);
+    }
+
+    // =====================================================================
+    // GERENTE
+    // =====================================================================
+    async function cargarGerente() {
+      const anio = document.getElementById('ger-anio').value;
+      document.querySelectorAll('.ger-anio-label').forEach(e => e.textContent = anio);
+      const data = await api(`/api/gerencia/resumen?anio=${anio}`);
+      STATE.gerente = data;
+
+      document.getElementById('ger-kpi-reservas').textContent = fmtNum(data.kpis.reservas);
+      document.getElementById('ger-kpi-noches').textContent = fmtNum(data.kpis.noches);
+      document.getElementById('ger-kpi-aloj').textContent = '$ ' + fmtNum(data.kpis.ingresos_aloj_mill, 1) + ' M';
+      document.getElementById('ger-kpi-serv').textContent = '$ ' + fmtNum(data.kpis.ingresos_serv_mill, 1) + ' M';
+      document.getElementById('ger-kpi-calif').textContent = data.kpis.calificacion ? `★ ${data.kpis.calificacion}` : '—';
+
+      renderGraficaGerente();
+      renderOcupacionGerente();
+      renderRankingGerente();
+      renderPromocionGerente();
+    }
+
+    function renderGraficaGerente() {
+      const evo = STATE.gerente.evolucion;
+      if (STATE.chartLag) STATE.chartLag.destroy();
+      STATE.chartLag = new Chart(document.getElementById('ger-chart-lag').getContext('2d'), {
+        type: 'line',
+        data: {
+          labels: evo.map(x => x.mes),
+          datasets: [{
+            label: 'Hospedaje (millones de pesos)',
+            data: evo.map(x => x.ingresos_millones),
+            borderColor: '#f59e0b', backgroundColor: 'rgba(245, 158, 11, 0.18)',
+            borderWidth: 2.5, tension: 0.35, fill: true
+          }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: {
+            legend: { labels: { color: '#fef3c7' } },
+            tooltip: {
+              callbacks: {
+                label: ctx => `$ ${fmtNum(ctx.parsed.y, 1)} millones`,
+                afterLabel: ctx => {
+                  const v = evo[ctx.dataIndex].variacion_pct;
+                  return v === null ? 'Primer mes' : `${v >= 0 ? '▲ +' : '▼ '}${fmtNum(v, 1)}% frente al mes anterior`;
+                }
+              }
+            }
+          },
+          scales: {
+            x: { ticks: { color: '#a7f3d0', font: { size: 10 } } },
+            y: { ticks: { color: '#a7f3d0', font: { size: 10 } } }
+          }
+        }
+      });
+    }
+
+    function renderOcupacionGerente() {
+      const meses = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+      document.getElementById('ger-heatmap-ocupacion').innerHTML = `
+        <table class="w-full text-[11px] font-mono border-separate border-spacing-1">
+          <thead><tr class="text-emerald-200/70"><th class="text-left px-2">Municipio</th>${meses.map(m => `<th class="text-center uppercase px-1">${m}</th>`).join('')}</tr></thead>
+          <tbody>
+            ${STATE.gerente.ocupacion.map(r => `
+              <tr>
+                <td class="font-bold text-white pr-2 text-xs">${r.municipio}</td>
+                ${meses.map(m => {
+                  if (r[m] === null || r[m] === undefined) return `<td class="text-center py-1.5 px-1 rounded text-emerald-200/30">—</td>`;
+                  const val = Number(r[m]);
+                  const bg = val >= 48 ? 'rgba(245, 158, 11, 0.88)' : val >= 34 ? 'rgba(16, 185, 129, 0.72)'
+                           : val >= 22 ? 'rgba(16, 185, 129, 0.35)' : 'rgba(16, 185, 129, 0.14)';
+                  return `<td class="text-center py-1.5 px-1 rounded font-bold" style="background:${bg}; color:${val >= 48 ? '#050c09' : '#ecfdf5'}">${val.toFixed(1)}%</td>`;
+                }).join('')}
+              </tr>`).join('')}
+          </tbody>
+        </table>`;
+    }
+
+    function renderRankingGerente() {
+      const municipios = [...new Set(STATE.gerente.ranking.map(r => r.municipio))];
+      if (!municipios.includes(STATE.rankingMunicipio)) STATE.rankingMunicipio = municipios[0] || '';
+      document.getElementById('ger-ranking-municipios').innerHTML = municipios.map(m => `
+        <button onclick="STATE.rankingMunicipio='${m}'; renderRankingGerente()" class="mpio-chip ${m === STATE.rankingMunicipio ? 'active' : ''} px-3.5 py-1.5 rounded-full text-xs font-semibold border border-emerald-500/20 bg-[#08150f] text-emerald-100/80">${m}</button>`).join('');
+      const medallas = ['🥇', '🥈', '🥉'];
+      document.getElementById('ger-ranking-cards').innerHTML = STATE.gerente.ranking
+        .filter(r => r.municipio === STATE.rankingMunicipio)
+        .map(r => `
+          <div class="sub-glass rounded-2xl p-5 space-y-2 ${r.puesto === 1 ? 'border border-amber-400/50' : ''}">
+            <div class="text-3xl">${medallas[r.puesto - 1] || '#' + r.puesto}</div>
+            <div class="font-serif text-lg font-bold text-white">${r.alojamiento}</div>
+            <div class="text-xs text-emerald-200/70">${r.tipo} · ${fmtNum(r.reservas)} reservas</div>
+            <div class="font-mono text-xl font-extrabold text-emerald-300">$ ${fmtNum(r.ingresos_millones, 1)} M</div>
+          </div>`).join('');
+    }
+
+    function renderPromocionGerente() {
+      document.getElementById('ger-tabla-promocion').innerHTML = STATE.gerente.promocion.map(r => `
+        <tr class="hover:bg-emerald-500/5">
+          <td class="py-2.5 px-3 font-bold text-white font-sans">${r.alojamiento}<div class="text-[11px] text-emerald-200/60 font-normal">${r.tipo}</div></td>
+          <td class="py-2.5 px-3 text-emerald-200/80 font-sans">${r.municipio}</td>
+          <td class="py-2.5 px-3 text-center text-amber-300 font-bold">★ ${r.calificacion}</td>
+          <td class="py-2.5 px-3 text-right">#${r.puesto_calidad}</td>
+          <td class="py-2.5 px-3 text-right">#${r.puesto_ventas}</td>
+          <td class="py-2.5 px-3 text-right font-bold text-amber-300">${r.brecha} puestos</td>
+        </tr>`).join('');
+    }
+
+    async function cargarLiquidaciones(periodo = null) {
+      const data = await api(`/api/gerencia/liquidaciones${periodo ? '?periodo=' + periodo : ''}`);
+      const sel = document.getElementById('ger-liq-periodo');
+      sel.innerHTML = data.periodos.map(p => `<option value="${p}">${fmtPeriodo(p)}</option>`).join('');
+      if (data.periodo) sel.value = data.periodo;
+
+      const liquidado = data.liquidados.find(m => m.periodo === data.periodo);
+      document.getElementById('ger-liq-acciones').innerHTML = liquidado ? `
+        <div class="rounded-xl px-3 py-2.5 bg-emerald-500/15 border border-emerald-500/35 text-xs text-emerald-100 space-y-1">
+          <div class="font-bold text-emerald-300">✓ Este mes ya está liquidado</div>
+          <div>${liquidado.alojamientos} alojamientos · comisión ${fmtNum(liquidado.porcentaje_comision, 1)}%</div>
+        </div>
+        <button onclick="reabrirMes()" class="w-full mt-3 py-2 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/30 text-rose-300 text-xs font-semibold">Reabrir este mes</button>` : `
+        <div class="flex items-end gap-3">
+          <div>
+            <label class="block text-xs text-emerald-200/80 mb-1">Comisión (%)</label>
+            <input type="number" id="ger-liq-pct" value="12" step="0.5" min="0" max="100" class="w-24 rounded-xl bg-[#06110c] border border-emerald-500/30 px-3 py-2 text-xs font-mono text-amber-300" />
+          </div>
+          <button onclick="liquidarMes()" class="flex-1 px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-emerald-500 text-slate-950 font-extrabold text-xs shadow-lg">Liquidar ${data.periodo ? fmtPeriodo(data.periodo) : ''}</button>
+        </div>`;
+
+      document.getElementById('ger-liq-meses').innerHTML = data.liquidados.length ? data.liquidados.map(m => `
+        <div onclick="cargarLiquidaciones('${m.periodo}')" class="cursor-pointer sub-glass hover:border-amber-400/50 rounded-xl p-3 space-y-1 transition ${m.periodo === data.periodo ? 'border-amber-400 bg-amber-950/20' : ''}">
+          <div class="flex justify-between text-xs"><span class="font-bold text-amber-300">${fmtPeriodo(m.periodo)}</span><span class="text-emerald-300">${m.alojamientos} alojamientos</span></div>
+          <div class="flex justify-between font-mono text-xs"><span class="text-emerald-200/60">Pagado a hoteles</span><span class="text-white font-bold">${fmtCOP(m.total_pagar)}</span></div>
+        </div>`).join('') : `<div class="sub-glass rounded-xl p-3 text-xs text-emerald-200/60">Todavía no se ha liquidado ningún mes.</div>`;
+
+      document.getElementById('ger-liq-titulo').textContent = data.periodo ? `Detalle de ${fmtPeriodo(data.periodo)}` : 'Detalle de la liquidación';
+      const tbody = document.getElementById('ger-liq-tabla');
+      tbody.innerHTML = data.detalle.length ? data.detalle.map(d => `
+        <tr class="hover:bg-emerald-500/5">
+          <td class="py-2.5 px-3 font-sans"><div class="font-bold text-white">${d.alojamiento}</div><div class="text-[11px] text-emerald-200/60">${d.municipio}</div></td>
+          <td class="py-2.5 px-3 text-right">${d.reservas}</td>
+          <td class="py-2.5 px-3 text-right" title="Alojamiento ${fmtCOP(d.ingreso_alojamiento)} + servicios ${fmtCOP(d.ingreso_servicios)}">${fmtCOP(Number(d.ingreso_alojamiento) + Number(d.ingreso_servicios))}</td>
+          <td class="py-2.5 px-3 text-right text-amber-300">${fmtCOP(d.valor_comision)}</td>
+          <td class="py-2.5 px-3 text-right font-bold text-emerald-300">${fmtCOP(d.valor_a_pagar)}</td>
+        </tr>`).join('') :
+        `<tr><td colspan="5" class="py-10 text-center text-emerald-200/50">Este mes todavía no está liquidado.</td></tr>`;
+      lucide.createIcons();
+    }
+
+    async function liquidarMes() {
+      const periodo = document.getElementById('ger-liq-periodo').value;
+      const porcentaje = Number(document.getElementById('ger-liq-pct').value);
+      if (!confirm(`¿Liquidar ${fmtPeriodo(periodo)} con una comisión del ${porcentaje}%?`)) return;
+      const data = await api('/api/gerencia/liquidar', { periodo, porcentaje });
+      if (!data.ok) { showToast(data.mensaje, false); return; }
+      showToast(`${fmtPeriodo(periodo)} liquidado.`);
+      cargarLiquidaciones(periodo);
+    }
+
+    async function reabrirMes() {
+      const periodo = document.getElementById('ger-liq-periodo').value;
+      if (!confirm(`¿Reabrir ${fmtPeriodo(periodo)}? Se borrará su liquidación y habrá que volver a hacerla.`)) return;
+      const data = await api('/api/gerencia/reabrir', { periodo });
+      if (!data.ok) { showToast(data.mensaje, false); return; }
+      showToast(`${fmtPeriodo(periodo)} reabierto.`);
+      cargarLiquidaciones(periodo);
+    }
+
+    // =====================================================================
+    // AUDITOR
+    // =====================================================================
+    async function cargarAuditor() {
+      const data = await api('/api/auditor/panel');
+      document.getElementById('aud-total').textContent = `(${fmtNum(data.total_registros)})`;
+
+      const tbody = document.getElementById('aud-tabla-bitacora');
+      tbody.innerHTML = data.bitacora.length ? data.bitacora.map(b => {
+        const diff = Number(b.diferencia || 0);
+        const [fecha, hora] = b.fecha_cambio.split(' ');
+        return `
+          <tr class="hover:bg-emerald-500/5">
+            <td class="py-2.5 px-3 font-mono"><div class="text-white">${fmtFecha(fecha)}</div><div class="text-[11px] text-emerald-200/60">${hora}</div></td>
+            <td class="py-2.5 px-3"><div class="font-bold text-white">${b.alojamiento || '—'} · Hab. ${b.hab_numero || ''}</div><div class="text-[11px] text-emerald-200/60">${b.temporada || ''}</div></td>
+            <td class="py-2.5 px-3 text-right font-mono text-emerald-200/70">${fmtCOP(b.valor_anterior)}</td>
+            <td class="py-2.5 px-3 text-right font-mono font-bold text-white">${fmtCOP(b.valor_nuevo)}</td>
+            <td class="py-2.5 px-3 text-right font-mono font-bold ${diff >= 0 ? 'text-emerald-400' : 'text-rose-400'}">${b.operacion !== 'UPDATE' ? b.operacion : `${diff >= 0 ? '+' : ''}${fmtNum(b.pct_cambio, 1)}%`}</td>
+            <td class="py-2.5 px-3"><div class="text-white">${b.usuario_so || b.usuario_bd}</div><div class="text-[11px] text-emerald-200/60">${b.equipo || ''} · usuario BD ${b.usuario_bd}</div></td>
+          </tr>`;
+      }).join('') :
+        `<tr><td colspan="6" class="py-12 text-center text-emerald-200/50">Todavía no hay cambios de precio. Cambia una tarifa en la vista del Administrador y aparecerá aquí.</td></tr>`;
+
+      document.getElementById('aud-metodos-pago').innerHTML = data.metodos.map(m => `
+        <div class="sub-glass rounded-xl p-3 flex items-center justify-between text-xs">
+          <div><div class="font-bold text-white">${m.metodo_pago.replace('_', ' ')}</div><div class="text-[11px] text-emerald-200/60">${fmtNum(m.transacciones)} pagos</div></div>
+          <div class="text-sm font-bold font-mono text-amber-300">$ ${fmtNum(m.total_millones, 1)} M</div>
+        </div>`).join('');
+
+      document.getElementById('aud-lista-pagos').innerHTML = data.pagos.map(p => `
+        <div class="sub-glass rounded-xl p-3 flex items-center justify-between text-xs">
+          <div>
+            <div class="font-bold text-white">Reserva #${p.id_reserva} · ${p.cliente}</div>
+            <div class="text-[11px] text-emerald-200/60">${p.alojamiento} · ${fmtFecha(p.fecha_pago)} · ${p.metodo_pago.replace('_', ' ')}</div>
+          </div>
+          <div class="font-mono font-bold text-emerald-300">${fmtCOP(p.valor)}</div>
+        </div>`).join('');
+    }
+
+    // =====================================================================
+    // Luciérnagas doradas del paisaje cafetero
+    // =====================================================================
+    function initFireflies() {
+      const canvas = document.getElementById('fireflies-canvas');
+      const ctx = canvas.getContext('2d');
+      let w, h;
+      function resize() { w = canvas.width = window.innerWidth; h = canvas.height = window.innerHeight; }
+      window.addEventListener('resize', resize);
+      resize();
+      const flies = Array.from({ length: 36 }, () => ({
+        x: Math.random() * w, y: Math.random() * h,
+        vx: (Math.random() - 0.5) * 0.3, vy: -Math.random() * 0.25 - 0.05,
+        r: Math.random() * 2.2 + 0.8, alpha: Math.random(),
+        dAlpha: (Math.random() * 0.015) + 0.004, warm: Math.random() > 0.35
+      }));
+      function animate() {
+        ctx.clearRect(0, 0, w, h);
+        for (const f of flies) {
+          f.x += f.vx; f.y += f.vy; f.alpha += f.dAlpha;
+          if (f.alpha > 0.9 || f.alpha < 0.15) f.dAlpha *= -1;
+          if (f.y < -10) f.y = h + 10;
+          if (f.x < -10) f.x = w + 10;
+          if (f.x > w + 10) f.x = -10;
+          ctx.beginPath();
+          ctx.arc(f.x, f.y, f.r, 0, Math.PI * 2);
+          ctx.fillStyle = f.warm ? `rgba(251, 191, 36, ${f.alpha * 0.7})` : `rgba(16, 185, 129, ${f.alpha * 0.6})`;
+          ctx.shadowBlur = 12;
+          ctx.shadowColor = f.warm ? '#f59e0b' : '#10b981';
+          ctx.fill();
+        }
+        requestAnimationFrame(animate);
+      }
+      animate();
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      lucide.createIcons();
+      initFireflies();
+      initApp();
+    });
+  </script>
+</body>
+</html>

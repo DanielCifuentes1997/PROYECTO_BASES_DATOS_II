@@ -1,41 +1,19 @@
--- ============================================================================
--- Proyecto Integrador TurismoUQ  |  Script 03 - Las 8 consultas de analisis
--- Universidad del Quindio - Bases de Datos II - codigo 12338 - periodo 2026-2
--- Autor: Daniel Esteban Cifuentes Blandon
---
--- COMO SE CALCULA EL INGRESO EN TODO ESTE SCRIPT
--- El ingreso de alojamiento sale de RESERVA_HABITACION:
---        SUM(noches * valor_noche_aplicado)
--- y NO de RESERVA.valor_total. Razon: una reserva puede tomar varias
--- habitaciones, asi que sumar valor_total despues de un JOIN lo contaria
--- varias veces. Ademas RESERVA_HABITACION ya trae las noches separadas por
--- temporada, que es justo lo que se necesita para abrir por ALTA / BAJA.
---
--- Las reservas CANCELADA se excluyen siempre: no generaron ingreso.
--- ============================================================================
+-- TurismoUQ - Script 03: consultas de analisis
+-- El ingreso se calcula como noches x tarifa sobre RESERVA_HABITACION y no con
+-- RESERVA.valor_total, porque una reserva puede tener varias habitaciones.
+-- Las reservas canceladas no se cuentan.
+-- Ejecutar como TURISMOUQ
+
 SET DEFINE OFF;
 SET LINESIZE 160;
 SET PAGESIZE 100;
 SET TAB OFF;
 
-
--- ############################################################################
--- CONSULTA 1  -  OCUPACION POR MUNICIPIO Y MES, CON PIVOT
--- ----------------------------------------------------------------------------
--- Pregunta: como se mueve el porcentaje de ocupacion de cada municipio a lo
--- largo de 2025. Se espera ver los picos de Semana Santa, mitad de ano y
--- diciembre, que es la estacionalidad del turismo en el Quindio.
---
--- Ocupacion = noches vendidas / noches disponibles * 100
---   noches disponibles = habitaciones del municipio x dias del mes
---
--- PIVOT convierte las 12 filas de meses de cada municipio en 12 COLUMNAS.
--- Sin PIVOT habria 144 filas; con PIVOT hay 12, una por municipio.
--- ############################################################################
+-- Consulta 1: ocupacion (%) por municipio y mes en 2025, con PIVOT
+-- ocupacion = noches vendidas / (habitaciones del municipio x dias del mes) x 100
 COLUMN municipio FORMAT A14
 
 WITH inventario AS (
-  -- cuantas habitaciones tiene cada municipio (el denominador)
   SELECT m.nombre AS municipio, COUNT(*) AS habitaciones
   FROM   habitacion  h
   JOIN   alojamiento a ON a.id_alojamiento = h.id_alojamiento
@@ -43,7 +21,6 @@ WITH inventario AS (
   GROUP  BY m.nombre
 ),
 vendido AS (
-  -- noches vendidas por municipio y mes, y cuantos dias tiene ese mes
   SELECT m.nombre                                            AS municipio,
          TO_CHAR(r.fecha_checkin, 'MM')                      AS mes,
          SUM(rh.noches)                                      AS noches,
@@ -72,21 +49,8 @@ PIVOT (
 )
 ORDER BY municipio;
 
-
--- ############################################################################
--- CONSULTA 2  -  INGRESOS CON ROLLUP Y GROUPING
--- ----------------------------------------------------------------------------
--- Pregunta: ingresos por municipio, tipo de alojamiento y temporada, con los
--- subtotales de cada nivel y el total general, en una sola pasada.
---
--- ROLLUP(a, b, c) produce 4 niveles: (a,b,c), (a,b), (a) y el total.
--- GROUPING(col) devuelve 1 cuando esa columna fue colapsada por el ROLLUP,
--- o sea cuando la fila es un subtotal y no un dato. Sirve para no confundir
--- un subtotal con una fila real cuyo valor fuera NULL.
--- GROUPING_ID junta esos bits en un numero y asi se nombra el nivel directo.
---
--- Se limita a 2025 para que la salida quepa en pantalla en la sustentacion.
--- ############################################################################
+-- Consulta 2: ingresos por municipio, tipo de alojamiento y temporada con ROLLUP.
+-- GROUPING indica si la fila es un subtotal (1) o un dato (0).
 COLUMN municipio FORMAT A14
 COLUMN tipo_alojamiento FORMAT A22
 COLUMN temporada FORMAT A12
@@ -119,21 +83,8 @@ ORDER  BY GROUPING(m.nombre), m.nombre,
           GROUPING(ta.nombre), ta.nombre,
           GROUPING(t.tipo), t.tipo;
 
-
--- ############################################################################
--- CONSULTA 3  -  LOS 3 ALOJAMIENTOS DE MAYOR INGRESO EN CADA MUNICIPIO
---                (RANK con PARTITION BY)
--- ----------------------------------------------------------------------------
--- PARTITION BY m.nombre  -> el ranking se reinicia en cada municipio
--- ORDER BY ingresos DESC -> el puesto 1 es el que mas factura
---
--- La funcion de ventana se evalua DESPUES del GROUP BY y DESPUES del HAVING,
--- por eso no se puede filtrar con WHERE puesto <= 3 en la misma consulta:
--- hay que envolverla en una subconsulta. Ese es el motivo del SELECT de afuera.
---
--- Se usa RANK y no ROW_NUMBER porque si dos alojamientos empatan en ingresos
--- ambos deben quedar en el mismo puesto, no uno arriba del otro por azar.
--- ############################################################################
+-- Consulta 3: los 3 alojamientos con mas ingresos en cada municipio (RANK con PARTITION BY).
+-- Va dentro de una subconsulta porque RANK se calcula despues del GROUP BY.
 COLUMN municipio FORMAT A14
 COLUMN alojamiento FORMAT A26
 COLUMN tipo FORMAT A22
@@ -161,14 +112,7 @@ FROM (
 WHERE puesto <= 3
 ORDER BY municipio, puesto;
 
-
--- ############################################################################
--- CONSULTA 4  -  VARIACION DE INGRESOS MES CONTRA MES (LAG)
--- ----------------------------------------------------------------------------
--- LAG(x) OVER (ORDER BY mes) trae el valor de la fila anterior sin necesidad
--- de un self-join de la tabla consigo misma. El primer mes no tiene anterior,
--- por eso da NULL y la variacion tambien: es correcto, no es un error.
--- ############################################################################
+-- Consulta 4: variacion de ingresos mes contra mes con LAG
 COLUMN mes FORMAT A9
 COLUMN ingresos_millones FORMAT 999G999D9 HEADING "INGRESOS_MILL"
 COLUMN mes_anterior      FORMAT 999G999D9 HEADING "MES_ANTERIOR"
@@ -193,18 +137,7 @@ SELECT TO_CHAR(mes, 'YYYY-MM')                                        AS mes,
 FROM   ingresos_mes
 ORDER  BY mes;
 
-
--- ############################################################################
--- CONSULTA 5  -  CONSULTA PARAMETRIZADA CON VARIABLES DE ENLACE
--- ----------------------------------------------------------------------------
--- Las variables de enlace (bind variables) se escriben con dos puntos: :nombre
---
--- Por que usarlas en vez de concatenar la fecha dentro del texto del SQL:
---   1. Oracle guarda UN solo plan de ejecucion para la consulta y lo reutiliza
---      con cualquier rango de fechas. Concatenando, cada rango seria un SQL
---      distinto, con hard parse nuevo y basura en la shared pool.
---   2. No hay inyeccion de SQL: el valor viaja como dato, nunca como codigo.
--- ############################################################################
+-- Consulta 5: consulta parametrizada con variables de enlace (rango de fechas)
 VARIABLE b_fecha_ini VARCHAR2(10)
 VARIABLE b_fecha_fin VARCHAR2(10)
 
@@ -233,31 +166,8 @@ GROUP  BY m.nombre, ta.nombre
 ORDER  BY ingresos_millones DESC
 FETCH FIRST 15 ROWS ONLY;
 
-
--- ############################################################################
--- CONSULTA 6  -  VISTA MATERIALIZADA DE OCUPACION MENSUAL
--- ----------------------------------------------------------------------------
--- Una vista normal vuelve a ejecutar el JOIN de 25.000 reservas cada vez que
--- alguien la consulta. Una vista MATERIALIZADA guarda el resultado en disco,
--- como una tabla, y la consulta se vuelve un scan de 400 filas.
---
--- POLITICA DE REFRESCO ELEGIDA: REFRESH COMPLETE ON DEMAND, automatico cada
--- noche (START WITH ... NEXT SYSDATE + 1).
---
--- Por que COMPLETE y no FAST:
---   FAST necesita materialized view logs en las 5 tablas del JOIN y no admite
---   COUNT(DISTINCT). El costo de mantener esos logs en cada INSERT de reserva
---   es permanente; recalcular 400 filas una vez en la madrugada cuesta segundos.
---
--- Por que ON DEMAND y no ON COMMIT:
---   ON COMMIT recalcularia el agregado dentro de la transaccion de CADA
---   reserva nueva. Eso encarece la operacion que mas se repite en el sistema
---   para beneficiar a un reporte gerencial que se mira una vez al dia.
---
--- Por que diario y no mas seguido:
---   es un indicador mensual de ocupacion. Un dato con hasta 24 horas de
---   desfase no cambia ninguna decision de negocio.
--- ############################################################################
+-- Consulta 6: vista materializada de ocupacion mensual.
+-- Refresco completo, bajo demanda y automatico cada 24 horas.
 BEGIN
   EXECUTE IMMEDIATE 'DROP MATERIALIZED VIEW mv_ocupacion_mensual';
 EXCEPTION
@@ -284,7 +194,7 @@ JOIN   municipio          m  ON m.id_municipio   = a.id_municipio
 WHERE  r.estado <> 'CANCELADA'
 GROUP  BY m.id_municipio, m.nombre, TRUNC(r.fecha_checkin, 'MM');
 
--- Consulta contra la vista materializada: ya no toca las 5 tablas
+-- Consulta sobre la vista materializada
 COLUMN municipio FORMAT A14
 COLUMN mes FORMAT A9
 COLUMN ingresos_millones FORMAT 999G999D9 HEADING "INGRESOS_MILL"
@@ -298,18 +208,7 @@ FROM   mv_ocupacion_mensual
 WHERE  mes BETWEEN DATE '2025-06-01' AND DATE '2025-08-01'
 ORDER  BY municipio, mes;
 
-
--- ############################################################################
--- CONSULTA 7  -  UNPIVOT
--- ----------------------------------------------------------------------------
--- PIVOT pasa filas a columnas; UNPIVOT hace lo contrario.
---
--- Aqui se arma primero un resumen "ancho": una fila por municipio con cuatro
--- columnas (noches y clientes, en temporada alta y en baja). Ese formato es
--- comodo para leerlo en pantalla pero incomodo para graficarlo o filtrarlo.
--- UNPIVOT lo devuelve a formato "largo": una fila por municipio, metrica y
--- temporada, que es la forma normalizada.
--- ############################################################################
+-- Consulta 7: UNPIVOT, pasa noches y clientes por temporada de columnas a filas
 COLUMN municipio FORMAT A14
 COLUMN metrica   FORMAT A10
 COLUMN temporada FORMAT A6
@@ -342,24 +241,8 @@ UNPIVOT (
 )
 ORDER BY municipio, metrica, temporada;
 
-
--- ############################################################################
--- CONSULTA 8  -  CONSULTA LIBRE
--- ----------------------------------------------------------------------------
--- PREGUNTA DE NEGOCIO:
---   Cuales alojamientos estan bien calificados por los huespedes pero venden
---   pocas noches? Son los candidatos naturales a una campana de promocion:
---   el producto ya es bueno, lo que falta es demanda. Gastar publicidad en un
---   alojamiento mal calificado solo acelera las resenas malas.
---
--- Se compara la posicion del alojamiento en DOS rankings distintos:
---   - por calificacion promedio
---   - por noches vendidas
--- y se muestra la brecha. Brecha grande y positiva = buen producto, mal vendido.
---
--- Se exige un minimo de 25 resenas para que el promedio signifique algo:
--- un alojamiento con una sola resena de 5 estrellas no es "el mejor".
--- ############################################################################
+-- Consulta 8 (libre): alojamientos bien calificados pero con pocas ventas,
+-- candidatos a promocion. Minimo 25 resenas para que el promedio sea confiable.
 COLUMN alojamiento FORMAT A26
 COLUMN municipio   FORMAT A14
 COLUMN tipo        FORMAT A22

@@ -1,44 +1,37 @@
--- ============================================================================
--- Proyecto Integrador TurismoUQ  |  Script 01 - DDL (creacion de tablas)
--- Universidad del Quindio - Bases de Datos II - codigo 12338 - periodo 2026-2
--- Autor: Daniel Esteban Cifuentes Blandon
--- Motor: Oracle Database 21c Express Edition  |  PDB: XEPDB1
--- Ejecutar conectado como el usuario TURISMOUQ
--- ============================================================================
+-- TurismoUQ - Script 01: creacion de tablas
+-- Bases de Datos II - Universidad del Quindio
+-- Ejecutar como TURISMOUQ
+
 SET DEFINE OFF;
 
--- ---------------------------------------------------------------------------
--- 0. Limpieza: permite re-ejecutar este script de arriba a abajo sobre una
---    base que ya tenia objetos. Si la base esta limpia, no hace nada.
--- ---------------------------------------------------------------------------
+-- Borra lo que exista para poder ejecutar el script varias veces.
+-- Las vistas materializadas van primero: no se pueden borrar con DROP TABLE.
 BEGIN
+  FOR m IN (SELECT mview_name FROM user_mviews) LOOP
+    EXECUTE IMMEDIATE 'DROP MATERIALIZED VIEW "' || m.mview_name || '"';
+  END LOOP;
+
   FOR t IN (SELECT table_name FROM user_tables) LOOP
     EXECUTE IMMEDIATE 'DROP TABLE "' || t.table_name || '" CASCADE CONSTRAINTS PURGE';
   END LOOP;
 END;
 /
 
--- ---------------------------------------------------------------------------
--- 1. MUNICIPIO : los 12 municipios del Quindio
--- ---------------------------------------------------------------------------
+-- 1. Municipio
 CREATE TABLE municipio (
   id_municipio  NUMBER(4)     CONSTRAINT pk_municipio PRIMARY KEY,
   nombre        VARCHAR2(60)  CONSTRAINT nn_mpio_nombre NOT NULL,
   CONSTRAINT uq_mpio_nombre UNIQUE (nombre)
 );
 
--- ---------------------------------------------------------------------------
--- 2. TIPO_ALOJAMIENTO : finca cafetera, hotel, glamping, hostal...
--- ---------------------------------------------------------------------------
+-- 2. Tipo de alojamiento
 CREATE TABLE tipo_alojamiento (
   id_tipo  NUMBER(4)     CONSTRAINT pk_tipo_aloj PRIMARY KEY,
   nombre   VARCHAR2(50)  CONSTRAINT nn_tipo_nombre NOT NULL,
   CONSTRAINT uq_tipo_nombre UNIQUE (nombre)
 );
 
--- ---------------------------------------------------------------------------
--- 3. ALOJAMIENTO : la oferta. Pertenece a un municipio y a un tipo.
--- ---------------------------------------------------------------------------
+-- 3. Alojamiento
 CREATE TABLE alojamiento (
   id_alojamiento  NUMBER(6)      CONSTRAINT pk_alojamiento PRIMARY KEY,
   nombre          VARCHAR2(120)  CONSTRAINT nn_aloj_nombre NOT NULL,
@@ -51,9 +44,7 @@ CREATE TABLE alojamiento (
   CONSTRAINT uq_aloj_nombre    UNIQUE (nombre, id_municipio)
 );
 
--- ---------------------------------------------------------------------------
--- 4. HABITACION : unidad rentable dentro de un alojamiento
--- ---------------------------------------------------------------------------
+-- 4. Habitacion
 CREATE TABLE habitacion (
   id_habitacion   NUMBER(6)     CONSTRAINT pk_habitacion PRIMARY KEY,
   id_alojamiento  NUMBER(6)     CONSTRAINT nn_hab_aloj   NOT NULL,
@@ -68,11 +59,7 @@ CREATE TABLE habitacion (
   CONSTRAINT uq_hab_numero UNIQUE (id_alojamiento, numero)
 );
 
--- ---------------------------------------------------------------------------
--- 5. TEMPORADA : bloques de fechas ALTA / BAJA. No se traslapan entre si y
---    juntas cubren completo 2024-2026. Esto es lo que permite que una estadia
---    atraviese dos temporadas con tarifas distintas.
--- ---------------------------------------------------------------------------
+-- 5. Temporada (los rangos de fechas no se cruzan entre si)
 CREATE TABLE temporada (
   id_temporada  NUMBER(6)     CONSTRAINT pk_temporada PRIMARY KEY,
   nombre        VARCHAR2(60)  CONSTRAINT nn_temp_nombre NOT NULL,
@@ -84,9 +71,7 @@ CREATE TABLE temporada (
   CONSTRAINT uq_temp_nombre UNIQUE (nombre)
 );
 
--- ---------------------------------------------------------------------------
--- 6. TARIFA : precio por noche de una habitacion en una temporada
--- ---------------------------------------------------------------------------
+-- 6. Tarifa: precio por noche de una habitacion en una temporada
 CREATE TABLE tarifa (
   id_tarifa     NUMBER(8)      CONSTRAINT pk_tarifa PRIMARY KEY,
   id_habitacion NUMBER(6)      CONSTRAINT nn_tar_hab   NOT NULL,
@@ -98,9 +83,7 @@ CREATE TABLE tarifa (
   CONSTRAINT uq_tar_hab_temp UNIQUE (id_habitacion, id_temporada)
 );
 
--- ---------------------------------------------------------------------------
--- 7. CLIENTE
--- ---------------------------------------------------------------------------
+-- 7. Cliente
 CREATE TABLE cliente (
   id_cliente  NUMBER(8)      CONSTRAINT pk_cliente PRIMARY KEY,
   nombre      VARCHAR2(120)  CONSTRAINT nn_cli_nombre NOT NULL,
@@ -111,9 +94,7 @@ CREATE TABLE cliente (
   CONSTRAINT ck_cli_email     CHECK (email LIKE '%@%.%')
 );
 
--- ---------------------------------------------------------------------------
--- 8. RESERVA : cabecera. El detalle de habitaciones va en RESERVA_HABITACION.
--- ---------------------------------------------------------------------------
+-- 8. Reserva
 CREATE TABLE reserva (
   id_reserva      NUMBER(10)    CONSTRAINT pk_reserva PRIMARY KEY,
   id_cliente      NUMBER(8)     CONSTRAINT nn_res_cliente  NOT NULL,
@@ -127,26 +108,9 @@ CREATE TABLE reserva (
   CONSTRAINT ck_res_valor   CHECK (valor_total >= 0)
 ) TABLESPACE ts_historico_reservas;
 
--- ---------------------------------------------------------------------------
--- 9. RESERVA_HABITACION : tabla puente, y el corazon de las dos decisiones
---    de diseno que hay que sustentar.
---
---    DECISION 1 - una reserva toma varias habitaciones:
---      la reserva no apunta a una habitacion; son estas filas las que unen
---      RESERVA con HABITACION. Una reserva con 3 habitaciones son 3 grupos
---      de filas aqui.
---
---    DECISION 2 - una estadia atraviesa dos temporadas con tarifas distintas:
---      la PK incluye ID_TEMPORADA. Una estadia del 13 al 18 de enero parte
---      el 15 de enero (fin de "Alta Enero", inicio de "Baja I") y genera DOS
---      filas para la misma habitacion: 2 noches a tarifa alta y 3 a tarifa
---      baja. El valor de la estadia es SUM(noches * valor_noche_aplicado),
---      sin necesidad de recalcular nada.
---
---    VALOR_NOCHE_APLICADO se copia desde TARIFA en el momento de reservar y
---    ya no se vuelve a tocar: es precio historico. Si manana suben la tarifa,
---    las reservas viejas conservan lo que el cliente realmente pago.
--- ---------------------------------------------------------------------------
+-- 9. Reserva_habitacion: una fila por cada habitacion y cada temporada de la estadia.
+--    Permite que una reserva tenga varias habitaciones y que una estadia se cobre
+--    con la tarifa de cada temporada que atraviesa.
 CREATE TABLE reserva_habitacion (
   id_reserva           NUMBER(10),
   id_habitacion        NUMBER(6),
@@ -161,9 +125,7 @@ CREATE TABLE reserva_habitacion (
   CONSTRAINT ck_rh_valor  CHECK (valor_noche_aplicado > 0)
 ) TABLESPACE ts_historico_reservas;
 
--- ---------------------------------------------------------------------------
--- 10. SERVICIO : servicios complementarios que ofrece cada alojamiento
--- ---------------------------------------------------------------------------
+-- 10. Servicio
 CREATE TABLE servicio (
   id_servicio     NUMBER(6)     CONSTRAINT pk_servicio PRIMARY KEY,
   id_alojamiento  NUMBER(6)     CONSTRAINT nn_serv_aloj   NOT NULL,
@@ -174,9 +136,7 @@ CREATE TABLE servicio (
   CONSTRAINT uq_serv_nombre UNIQUE (id_alojamiento, nombre)
 );
 
--- ---------------------------------------------------------------------------
--- 11. RESERVA_SERVICIO : servicios consumidos en una reserva
--- ---------------------------------------------------------------------------
+-- 11. Servicios consumidos en una reserva
 CREATE TABLE reserva_servicio (
   id_reserva_servicio NUMBER(10)   CONSTRAINT pk_reserva_servicio PRIMARY KEY,
   id_reserva          NUMBER(10)   CONSTRAINT nn_rs_reserva  NOT NULL,
@@ -189,9 +149,7 @@ CREATE TABLE reserva_servicio (
   CONSTRAINT ck_rs_valor    CHECK (valor_total >= 0)
 ) TABLESPACE ts_historico_reservas;
 
--- ---------------------------------------------------------------------------
--- 12. PAGO
--- ---------------------------------------------------------------------------
+-- 12. Pago
 CREATE TABLE pago (
   id_pago      NUMBER(10)    CONSTRAINT pk_pago PRIMARY KEY,
   id_reserva   NUMBER(10)    CONSTRAINT nn_pago_reserva NOT NULL,
@@ -203,9 +161,7 @@ CREATE TABLE pago (
   CONSTRAINT ck_pago_metodo CHECK (metodo_pago IN ('EFECTIVO','TARJETA_CREDITO','TARJETA_DEBITO','PSE','TRANSFERENCIA'))
 ) TABLESPACE ts_historico_reservas;
 
--- ---------------------------------------------------------------------------
--- 13. RESENA : una reserva puede tener a lo sumo una resena
--- ---------------------------------------------------------------------------
+-- 13. Resena
 CREATE TABLE resena (
   id_resena     NUMBER(10)  CONSTRAINT pk_resena PRIMARY KEY,
   id_reserva    NUMBER(10)  CONSTRAINT nn_rsn_reserva NOT NULL,
@@ -217,9 +173,7 @@ CREATE TABLE resena (
   CONSTRAINT uq_rsn_reserva UNIQUE (id_reserva)
 ) TABLESPACE ts_historico_reservas;
 
--- ---------------------------------------------------------------------------
--- 14. USUARIO_SISTEMA : quien opera la plataforma
--- ---------------------------------------------------------------------------
+-- 14. Usuario del sistema
 CREATE TABLE usuario_sistema (
   id_usuario      NUMBER(6)     CONSTRAINT pk_usuario PRIMARY KEY,
   username        VARCHAR2(40)  CONSTRAINT nn_usr_username NOT NULL,
@@ -230,11 +184,7 @@ CREATE TABLE usuario_sistema (
   CONSTRAINT ck_usr_rol CHECK (rol IN ('RECEPCION','ADMIN_ALOJAMIENTO','GERENTE','AUDITOR'))
 );
 
--- ---------------------------------------------------------------------------
--- Indices sobre las llaves foraneas mas consultadas.
--- Oracle NO crea indice automatico sobre una FK: sin esto, los JOIN de las
--- consultas de analisis harian full table scan.
--- ---------------------------------------------------------------------------
+-- Indices sobre las llaves foraneas (Oracle no los crea solo)
 CREATE INDEX ix_aloj_municipio  ON alojamiento (id_municipio);
 CREATE INDEX ix_aloj_tipo       ON alojamiento (id_tipo);
 CREATE INDEX ix_hab_alojamiento ON habitacion (id_alojamiento);
@@ -251,7 +201,5 @@ CREATE INDEX ix_temp_rango      ON temporada (fecha_inicio, fecha_fin);
 
 COMMIT;
 
-PROMPT ==========================================================
-PROMPT  DDL ejecutado. Tablas creadas en el esquema TURISMOUQ:
-PROMPT ==========================================================
+PROMPT Tablas creadas:
 SELECT table_name FROM user_tables ORDER BY table_name;
