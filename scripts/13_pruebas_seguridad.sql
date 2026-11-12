@@ -195,6 +195,36 @@ END;
 PROMPT U4. Ver los datos de los clientes (debe fallar con ORA-00942)
 SELECT COUNT(*) FROM turismouq.cliente;
 
+
+-- =====================================================================
+PROMPT
+PROMPT =================================================================
+PROMPT PORTAL DEL HUESPED - usuario portal_web (la aplicacion web)
+PROMPT =================================================================
+CONNECT portal_web/"PortalWeb.2026"@localhost:1521/XEPDB1
+SET SERVEROUTPUT ON;
+
+PROMPT W1. Ve el catalogo publico
+SELECT (SELECT COUNT(*) FROM turismouq.v_catalogo_alojamientos) AS alojamientos,
+       (SELECT COUNT(*) FROM turismouq.v_catalogo_habitaciones) AS habitaciones,
+       (SELECT COUNT(*) FROM turismouq.v_catalogo_servicios)    AS servicios
+FROM   dual;
+
+PROMPT W2. Buscar a un cliente por su documento: solo recibe su numero y su nombre
+DECLARE
+  v_id     NUMBER;
+  v_nombre VARCHAR2(100);
+BEGIN
+  turismouq.pkg_portal.sp_buscar_cliente(p_documento => '1000007',
+                                         p_id_cliente => v_id, p_nombre => v_nombre);
+  DBMS_OUTPUT.PUT_LINE('Cliente ' || v_id || ': ' || v_nombre);
+END;
+/
+
+PROMPT W3. Listar los clientes o las reservas (debe fallar con ORA-00942)
+SELECT COUNT(*) FROM turismouq.cliente;
+SELECT COUNT(*) FROM turismouq.v_clientes;
+
 SET FEEDBACK ON;
 
 -- =====================================================================

@@ -87,6 +87,7 @@ WHERE  s.id_alojamiento = (SELECT us.id_alojamiento FROM usuario_sistema us
 -- Tarifas de las habitaciones de la sede, y si todavia se pueden cambiar
 CREATE OR REPLACE VIEW v_sede_tarifas AS
 SELECT tf.id_tarifa,
+       h.id_habitacion,
        h.numero        AS habitacion,
        t.nombre        AS temporada,
        t.tipo,
@@ -104,6 +105,121 @@ WHERE  h.id_alojamiento = (SELECT us.id_alojamiento FROM usuario_sistema us
 CREATE OR REPLACE VIEW v_clientes AS
 SELECT id_cliente, nombre, documento, email
 FROM   cliente;
+
+-- El alojamiento del usuario que inicio sesion (para mostrarlo en pantalla)
+CREATE OR REPLACE VIEW v_mi_sede AS
+SELECT a.id_alojamiento, a.nombre, m.nombre AS municipio, ta.nombre AS tipo
+FROM   alojamiento a
+JOIN   municipio m         ON m.id_municipio = a.id_municipio
+JOIN   tipo_alojamiento ta ON ta.id_tipo     = a.id_tipo
+WHERE  a.id_alojamiento = (SELECT us.id_alojamiento FROM usuario_sistema us
+                           WHERE  UPPER(us.username) = SYS_CONTEXT('USERENV', 'SESSION_USER'));
+
+-- Noches por temporada de cada reserva de la sede (la cuenta en recepcion)
+CREATE OR REPLACE VIEW v_sede_estadias AS
+SELECT rh.id_reserva,
+       h.numero                                AS hab_numero,
+       t.nombre                                AS temporada,
+       t.tipo                                  AS tipo_temporada,
+       t.fecha_inicio,
+       rh.noches,
+       rh.valor_noche_aplicado,
+       rh.noches * rh.valor_noche_aplicado     AS subtotal
+FROM   reserva_habitacion rh
+JOIN   habitacion h ON h.id_habitacion = rh.id_habitacion
+JOIN   temporada t  ON t.id_temporada  = rh.id_temporada
+WHERE  h.id_alojamiento = (SELECT us.id_alojamiento FROM usuario_sistema us
+                           WHERE  UPPER(us.username) = SYS_CONTEXT('USERENV', 'SESSION_USER'));
+
+-- Servicios consumidos en las reservas de la sede
+CREATE OR REPLACE VIEW v_sede_consumos AS
+SELECT rs.id_reserva,
+       rs.id_reserva_servicio,
+       s.nombre       AS servicio,
+       rs.cantidad,
+       s.valor        AS valor_unitario,
+       rs.valor_total
+FROM   reserva_servicio rs
+JOIN   servicio s ON s.id_servicio = rs.id_servicio
+WHERE  s.id_alojamiento = (SELECT us.id_alojamiento FROM usuario_sistema us
+                           WHERE  UPPER(us.username) = SYS_CONTEXT('USERENV', 'SESSION_USER'));
+
+-- Auditor: cada cambio de tarifa con el alojamiento, la habitacion y la
+-- temporada ya resueltos, sin darle acceso a esas tablas
+CREATE OR REPLACE VIEW v_aud_cambios_tarifa AS
+SELECT au.id_auditoria, au.operacion, au.valor_anterior, au.valor_nuevo,
+       au.valor_nuevo - au.valor_anterior AS diferencia,
+       ROUND((au.valor_nuevo - au.valor_anterior) * 100
+             / NULLIF(au.valor_anterior, 0), 1) AS pct_cambio,
+       h.numero AS hab_numero, al.nombre AS alojamiento, m.nombre AS municipio,
+       t.nombre AS temporada, au.usuario_bd, au.usuario_so, au.equipo, au.fecha_cambio
+FROM   auditoria_tarifa au
+LEFT   JOIN habitacion h   ON h.id_habitacion   = au.id_habitacion
+LEFT   JOIN alojamiento al ON al.id_alojamiento = h.id_alojamiento
+LEFT   JOIN municipio m    ON m.id_municipio    = al.id_municipio
+LEFT   JOIN temporada t    ON t.id_temporada    = au.id_temporada;
+
+-- Auditor: los pagos con su alojamiento, sin datos personales del cliente
+CREATE OR REPLACE VIEW v_aud_pagos AS
+SELECT p.id_pago, p.id_reserva, a.nombre AS alojamiento, p.fecha_pago, p.valor, p.metodo_pago
+FROM   pago p
+JOIN  (SELECT rh.id_reserva, MIN(rh.id_habitacion) AS id_habitacion
+       FROM   reserva_habitacion rh
+       GROUP  BY rh.id_reserva) r ON r.id_reserva = p.id_reserva
+JOIN   habitacion h  ON h.id_habitacion  = r.id_habitacion
+JOIN   alojamiento a ON a.id_alojamiento = h.id_alojamiento;
+
+
+-- =====================================================================
+-- CATALOGO PUBLICO (portal del huesped)
+-- El portal se conecta con un usuario que solo ve esto: alojamientos,
+-- habitaciones, servicios y precios. No ve clientes, reservas ni pagos.
+-- =====================================================================
+
+-- Alojamientos con sus habitaciones, el precio desde y la calificacion
+CREATE OR REPLACE VIEW v_catalogo_alojamientos AS
+SELECT a.id_alojamiento, a.nombre, a.id_municipio, m.nombre AS municipio,
+       a.id_tipo, ta.nombre AS tipo, a.capacidad_max,
+       (SELECT COUNT(*) FROM habitacion h
+        WHERE  h.id_alojamiento = a.id_alojamiento) AS total_habitaciones,
+       (SELECT COUNT(*) FROM habitacion h
+        WHERE  h.id_alojamiento = a.id_alojamiento
+          AND  h.estado = 'DISPONIBLE') AS habitaciones_disponibles,
+       (SELECT MIN(tf.valor_noche)
+        FROM   tarifa tf
+        JOIN   habitacion h ON h.id_habitacion = tf.id_habitacion
+        JOIN   temporada t  ON t.id_temporada  = tf.id_temporada
+        WHERE  h.id_alojamiento = a.id_alojamiento
+          AND  t.fecha_fin >= TRUNC(SYSDATE)) AS precio_desde,
+       (SELECT ROUND(AVG(x.calificacion), 1)
+        FROM  (SELECT DISTINCT rs.id_resena, rs.calificacion
+               FROM   resena rs
+               JOIN   reserva_habitacion rh ON rh.id_reserva = rs.id_reserva
+               JOIN   habitacion h ON h.id_habitacion = rh.id_habitacion
+               WHERE  h.id_alojamiento = a.id_alojamiento) x) AS calificacion,
+       (SELECT COUNT(DISTINCT rs.id_resena)
+        FROM   resena rs
+        JOIN   reserva_habitacion rh ON rh.id_reserva = rs.id_reserva
+        JOIN   habitacion h ON h.id_habitacion = rh.id_habitacion
+        WHERE  h.id_alojamiento = a.id_alojamiento) AS total_resenas
+FROM   alojamiento a
+JOIN   municipio m         ON m.id_municipio = a.id_municipio
+JOIN   tipo_alojamiento ta ON ta.id_tipo     = a.id_tipo;
+
+CREATE OR REPLACE VIEW v_catalogo_habitaciones AS
+SELECT id_habitacion, id_alojamiento, numero, tipo_habitacion, estado, capacidad
+FROM   habitacion;
+
+CREATE OR REPLACE VIEW v_catalogo_servicios AS
+SELECT id_servicio, id_alojamiento, nombre, valor
+FROM   servicio;
+
+-- Precio de cada habitacion en cada temporada, para el desglose de la cotizacion
+CREATE OR REPLACE VIEW v_catalogo_tarifas AS
+SELECT tf.id_habitacion, t.nombre AS temporada, t.tipo AS tipo_temporada,
+       t.fecha_inicio, t.fecha_fin, tf.valor_noche
+FROM   tarifa tf
+JOIN   temporada t ON t.id_temporada = tf.id_temporada;
 
 
 -- =====================================================================
@@ -382,14 +498,128 @@ END pkg_gerencia;
 SHOW ERRORS PACKAGE BODY pkg_gerencia
 
 
+-- Portal del huesped: cotizar, buscarse por documento, registrarse y reservar.
+-- Buscar devuelve solo el numero y el nombre del cliente de ese documento:
+-- el portal nunca puede listar clientes ni ver sus correos.
+CREATE OR REPLACE PACKAGE pkg_portal IS
+  FUNCTION fn_valor_estadia (
+    p_id_habitacion  IN habitacion.id_habitacion%TYPE,
+    p_fecha_in       IN reserva.fecha_checkin%TYPE,
+    p_fecha_out      IN reserva.fecha_checkout%TYPE
+  ) RETURN NUMBER;
+
+  -- 1 si la habitacion esta libre en esas fechas, 0 si no. Devuelve NUMBER
+  -- porque una funcion BOOLEAN no se puede usar en un SELECT.
+  FUNCTION fn_disponible (
+    p_id_habitacion  IN habitacion.id_habitacion%TYPE,
+    p_fecha_in       IN reserva.fecha_checkin%TYPE,
+    p_fecha_out      IN reserva.fecha_checkout%TYPE
+  ) RETURN NUMBER;
+
+  PROCEDURE sp_buscar_cliente (
+    p_documento   IN  cliente.documento%TYPE,
+    p_id_cliente  OUT cliente.id_cliente%TYPE,
+    p_nombre      OUT cliente.nombre%TYPE
+  );
+
+  PROCEDURE sp_registrar_cliente (
+    p_nombre      IN  cliente.nombre%TYPE,
+    p_documento   IN  cliente.documento%TYPE,
+    p_email       IN  cliente.email%TYPE,
+    p_id_cliente  OUT cliente.id_cliente%TYPE
+  );
+
+  PROCEDURE sp_crear_reserva (
+    p_id_cliente     IN  cliente.id_cliente%TYPE,
+    p_id_habitacion  IN  habitacion.id_habitacion%TYPE,
+    p_fecha_in       IN  reserva.fecha_checkin%TYPE,
+    p_fecha_out      IN  reserva.fecha_checkout%TYPE,
+    p_num_huespedes  IN  reserva.num_huespedes%TYPE,
+    p_id_reserva     OUT reserva.id_reserva%TYPE
+  );
+END pkg_portal;
+/
+SHOW ERRORS PACKAGE pkg_portal
+
+CREATE OR REPLACE PACKAGE BODY pkg_portal IS
+
+  FUNCTION fn_valor_estadia (
+    p_id_habitacion  IN habitacion.id_habitacion%TYPE,
+    p_fecha_in       IN reserva.fecha_checkin%TYPE,
+    p_fecha_out      IN reserva.fecha_checkout%TYPE
+  ) RETURN NUMBER IS
+  BEGIN
+    RETURN pkg_turismouq.fn_valor_estadia(p_id_habitacion, p_fecha_in, p_fecha_out);
+  END fn_valor_estadia;
+
+  FUNCTION fn_disponible (
+    p_id_habitacion  IN habitacion.id_habitacion%TYPE,
+    p_fecha_in       IN reserva.fecha_checkin%TYPE,
+    p_fecha_out      IN reserva.fecha_checkout%TYPE
+  ) RETURN NUMBER IS
+  BEGIN
+    IF pkg_turismouq.fn_habitacion_disponible(p_id_habitacion, p_fecha_in, p_fecha_out) THEN
+      RETURN 1;
+    END IF;
+    RETURN 0;
+  END fn_disponible;
+
+  PROCEDURE sp_buscar_cliente (
+    p_documento   IN  cliente.documento%TYPE,
+    p_id_cliente  OUT cliente.id_cliente%TYPE,
+    p_nombre      OUT cliente.nombre%TYPE
+  ) IS
+  BEGIN
+    SELECT id_cliente, nombre
+    INTO   p_id_cliente, p_nombre
+    FROM   cliente
+    WHERE  documento = TRIM(p_documento);
+  EXCEPTION
+    WHEN NO_DATA_FOUND THEN
+      p_id_cliente := NULL;
+      p_nombre     := NULL;
+  END sp_buscar_cliente;
+
+  PROCEDURE sp_registrar_cliente (
+    p_nombre      IN  cliente.nombre%TYPE,
+    p_documento   IN  cliente.documento%TYPE,
+    p_email       IN  cliente.email%TYPE,
+    p_id_cliente  OUT cliente.id_cliente%TYPE
+  ) IS
+  BEGIN
+    pkg_turismouq.sp_registrar_cliente(p_nombre, p_documento, p_email, p_id_cliente);
+  END sp_registrar_cliente;
+
+  PROCEDURE sp_crear_reserva (
+    p_id_cliente     IN  cliente.id_cliente%TYPE,
+    p_id_habitacion  IN  habitacion.id_habitacion%TYPE,
+    p_fecha_in       IN  reserva.fecha_checkin%TYPE,
+    p_fecha_out      IN  reserva.fecha_checkout%TYPE,
+    p_num_huespedes  IN  reserva.num_huespedes%TYPE,
+    p_id_reserva     OUT reserva.id_reserva%TYPE
+  ) IS
+  BEGIN
+    pkg_turismouq.sp_crear_reserva(p_id_cliente, p_id_habitacion, p_fecha_in, p_fecha_out,
+                                   p_num_huespedes, p_id_reserva);
+  END sp_crear_reserva;
+
+END pkg_portal;
+/
+SHOW ERRORS PACKAGE BODY pkg_portal
+
+
 SET LINESIZE 120;
-SET PAGESIZE 50;
-COLUMN object_name FORMAT A22
+SET PAGESIZE 60;
+COLUMN object_name FORMAT A24
 COLUMN object_type FORMAT A14
 PROMPT Objetos creados para la seguridad:
 SELECT object_name, object_type, status
 FROM   user_objects
 WHERE  object_name IN ('FN_SEDE_USUARIO', 'V_SEDE_RESERVAS', 'V_SEDE_HABITACIONES',
-                       'V_SEDE_SERVICIOS', 'V_SEDE_TARIFAS', 'V_CLIENTES',
-                       'PKG_RECEPCION', 'PKG_ADMINISTRACION', 'PKG_GERENCIA')
+                       'V_SEDE_SERVICIOS', 'V_SEDE_TARIFAS', 'V_SEDE_ESTADIAS',
+                       'V_SEDE_CONSUMOS', 'V_MI_SEDE', 'V_CLIENTES',
+                       'V_AUD_CAMBIOS_TARIFA', 'V_AUD_PAGOS',
+                       'V_CATALOGO_ALOJAMIENTOS', 'V_CATALOGO_HABITACIONES',
+                       'V_CATALOGO_SERVICIOS', 'V_CATALOGO_TARIFAS',
+                       'PKG_RECEPCION', 'PKG_ADMINISTRACION', 'PKG_GERENCIA', 'PKG_PORTAL')
 ORDER  BY object_type, object_name;

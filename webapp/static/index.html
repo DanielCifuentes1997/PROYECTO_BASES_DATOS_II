@@ -280,7 +280,9 @@
     <!-- =================================================================== -->
     <!-- RECEPCIÓN                                                           -->
     <!-- =================================================================== -->
-    <section id="vista-recepcion" class="hidden space-y-6">
+    <section id="vista-recepcion" class="hidden">
+      <div id="login-recepcion" class="hidden"></div>
+      <div id="app-recepcion" class="space-y-6">
       <div class="luxury-card rounded-3xl p-6 flex flex-wrap items-center justify-between gap-4">
         <div class="flex items-center gap-4">
           <div class="w-12 h-12 rounded-2xl bg-amber-500/15 border border-amber-500/35 flex items-center justify-center text-amber-400">
@@ -292,10 +294,7 @@
           </div>
         </div>
         <div class="flex flex-wrap items-end gap-3">
-          <div>
-            <label class="block text-[11px] text-amber-200/80 font-semibold mb-1">Sede</label>
-            <select id="rec-select-alojamiento" onchange="cargarRecepcion()" class="rounded-xl bg-[#06110c] border border-amber-500/35 px-3.5 py-2.5 text-xs text-white font-semibold"></select>
-          </div>
+          <div id="sesion-recepcion"></div>
           <button onclick="irAReservaMostrador()" class="px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-emerald-500 text-slate-950 font-extrabold text-xs flex items-center gap-2 shadow-lg transition">
             <i data-lucide="plus-circle" class="w-4 h-4"></i><span>Nueva reserva</span>
           </button>
@@ -343,7 +342,7 @@
                 <tr>
                   <th class="py-3 px-3"># Reserva</th>
                   <th class="py-3 px-3">Huésped</th>
-                  <th class="py-3 px-3">Alojamiento</th>
+                  <th class="py-3 px-3">Habitación</th>
                   <th class="py-3 px-3">Fechas</th>
                   <th class="py-3 px-3 text-center">Estado</th>
                 </tr>
@@ -369,12 +368,15 @@
           </div>
         </div>
       </div>
+      </div>
     </section>
 
     <!-- =================================================================== -->
     <!-- ADMINISTRADOR DE ALOJAMIENTO                                        -->
     <!-- =================================================================== -->
-    <section id="vista-admin" class="hidden space-y-6">
+    <section id="vista-admin" class="hidden">
+      <div id="login-admin" class="hidden"></div>
+      <div id="app-admin" class="space-y-6">
       <div class="luxury-card rounded-3xl p-6 flex flex-wrap items-center justify-between gap-4">
         <div class="flex items-center gap-4">
           <div class="w-12 h-12 rounded-2xl bg-emerald-500/15 border border-emerald-500/35 flex items-center justify-center text-emerald-400">
@@ -385,10 +387,7 @@
             <p class="text-xs text-emerald-100/70">Estado de las habitaciones, precios por temporada y servicios que ofrece.</p>
           </div>
         </div>
-        <div>
-          <label class="block text-xs text-amber-300 font-semibold mb-1">Alojamiento</label>
-          <select id="adm-select-alojamiento" onchange="cargarPanelAdmin(this.value)" class="rounded-xl bg-[#06110c] border border-amber-500/45 px-4 py-2.5 text-xs text-white font-bold"></select>
-        </div>
+        <div id="sesion-admin"></div>
       </div>
 
       <div class="flex flex-wrap gap-2" data-tabs="admin">
@@ -453,12 +452,15 @@
         <p class="text-xs text-emerald-100/70">Servicios que recepción puede cargar a la cuenta de los huéspedes de este alojamiento.</p>
         <div id="adm-lista-servicios" class="grid grid-cols-1 md:grid-cols-2 gap-2.5 text-xs"></div>
       </div>
+      </div>
     </section>
 
     <!-- =================================================================== -->
     <!-- GERENTE                                                             -->
     <!-- =================================================================== -->
-    <section id="vista-gerente" class="hidden space-y-6">
+    <section id="vista-gerente" class="hidden">
+      <div id="login-gerente" class="hidden"></div>
+      <div id="app-gerente" class="space-y-6">
       <div class="luxury-card rounded-3xl p-6 flex flex-wrap items-center justify-between gap-4">
         <div class="flex items-center gap-4">
           <div class="w-12 h-12 rounded-2xl bg-amber-500/15 border border-amber-500/35 flex items-center justify-center text-amber-400">
@@ -469,6 +471,7 @@
             <p class="text-xs text-emerald-100/70">Cómo le va al negocio y cuánto se le paga a cada alojamiento.</p>
           </div>
         </div>
+        <div id="sesion-gerente" class="ml-auto"></div>
         <div>
           <label class="block text-xs text-amber-300 font-semibold mb-1">Año</label>
           <select id="ger-anio" onchange="cargarGerente()" class="rounded-xl bg-[#06110c] border border-amber-500/45 px-4 py-2.5 text-xs text-white font-bold">
@@ -613,12 +616,15 @@
           </div>
         </div>
       </div>
+      </div>
     </section>
 
     <!-- =================================================================== -->
     <!-- AUDITOR                                                             -->
     <!-- =================================================================== -->
-    <section id="vista-auditor" class="hidden space-y-6">
+    <section id="vista-auditor" class="hidden">
+      <div id="login-auditor" class="hidden"></div>
+      <div id="app-auditor" class="space-y-6">
       <div class="luxury-card rounded-3xl p-6 flex flex-wrap items-center justify-between gap-4">
         <div class="flex items-center gap-4">
           <div class="w-12 h-12 rounded-2xl bg-emerald-500/15 border border-emerald-500/35 flex items-center justify-center text-emerald-400">
@@ -629,6 +635,7 @@
             <p class="text-xs text-emerald-100/70">Quién cambió precios, cuándo y desde dónde, y los pagos recibidos.</p>
           </div>
         </div>
+        <div id="sesion-auditor" class="ml-auto"></div>
         <button onclick="cargarAuditor()" class="px-4 py-2.5 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/35 text-emerald-300 text-xs font-bold flex items-center gap-2">
           <i data-lucide="refresh-cw" class="w-4 h-4"></i><span>Actualizar</span>
         </button>
@@ -637,6 +644,7 @@
       <div class="flex flex-wrap gap-2" data-tabs="auditor">
         <button data-tab="tarifas" onclick="abrirTab('auditor','tarifas')" class="mpio-chip active px-4 py-2 rounded-full text-xs font-semibold border border-emerald-500/25 bg-[#08150f] text-emerald-100 flex items-center gap-1.5"><i data-lucide="history" class="w-3.5 h-3.5"></i> Cambios de precios <span id="aud-total" class="font-mono opacity-70"></span></button>
         <button data-tab="pagos" onclick="abrirTab('auditor','pagos')" class="mpio-chip px-4 py-2 rounded-full text-xs font-semibold border border-emerald-500/25 bg-[#08150f] text-emerald-100 flex items-center gap-1.5"><i data-lucide="credit-card" class="w-3.5 h-3.5"></i> Pagos</button>
+        <button data-tab="intentos" onclick="abrirTab('auditor','intentos')" class="mpio-chip px-4 py-2 rounded-full text-xs font-semibold border border-emerald-500/25 bg-[#08150f] text-emerald-100 flex items-center gap-1.5"><i data-lucide="octagon-alert" class="w-3.5 h-3.5"></i> Intentos fallidos <span id="aud-total-intentos" class="font-mono opacity-70"></span></button>
       </div>
 
       <div data-panel="auditor-tarifas" class="luxury-card rounded-3xl p-6 space-y-4">
@@ -668,11 +676,30 @@
           <div id="aud-lista-pagos" class="space-y-2 max-h-[520px] overflow-y-auto pr-1"></div>
         </div>
       </div>
+
+      <div data-panel="auditor-intentos" class="hidden luxury-card rounded-3xl p-6 space-y-4">
+        <p class="text-xs text-emerald-100/70">Reservas y pagos que fallaron. Los guarda la base de datos con una transacción autónoma (PRAGMA AUTONOMOUS_TRANSACTION): quedan registrados aunque la reserva se haya deshecho con ROLLBACK.</p>
+        <div class="overflow-x-auto max-h-[560px] rounded-2xl border border-emerald-500/15">
+          <table class="w-full text-left border-collapse text-xs">
+            <thead class="sticky top-0 bg-[#08150f] text-emerald-200/75 uppercase font-mono border-b border-emerald-500/20">
+              <tr>
+                <th class="py-2.5 px-3">Cuándo</th>
+                <th class="py-2.5 px-3">Operación</th>
+                <th class="py-2.5 px-3">Cliente / habitación</th>
+                <th class="py-2.5 px-3">Error</th>
+                <th class="py-2.5 px-3">Usuario</th>
+              </tr>
+            </thead>
+            <tbody id="aud-tabla-intentos" class="divide-y divide-emerald-500/10"></tbody>
+          </table>
+        </div>
+      </div>
+      </div>
     </section>
   </main>
 
-  <footer class="relative z-10 text-center text-[11px] text-emerald-200/40 py-5">
-    TurismoUQ · Bases de Datos II · Las reglas del negocio se ejecutan en Oracle (paquete PKG_TURISMOUQ y disparadores). Los permisos por perfil se aplican en la Entrega 3.
+  <footer class="relative z-0 text-center text-[11px] text-emerald-200/40 py-5">
+    TurismoUQ · Bases de Datos II · Las reglas del negocio se ejecutan en Oracle. Cada perfil del personal inicia sesión con su propio usuario de Oracle y la base de datos aplica sus permisos (roles, vistas por sede y perfil). Los botones de arriba son solo para la demostración.
   </footer>
 
   <script>
@@ -716,8 +743,10 @@
       municipioSeleccionado: '', alojamientoReserva: null,
       habitacionesActuales: [], cotizacion: null, clienteReserva: null,
       vistaRecepcion: 'llegadas', reservaAbierta: null,
-      admin: null, gerente: null, rankingMunicipio: '', chartLag: null
+      admin: null, gerente: null, rankingMunicipio: '', chartLag: null,
+      sesiones: {}
     };
+    try { STATE.sesiones = JSON.parse(sessionStorage.getItem('turismouq_sesiones')) || {}; } catch (e) {}
 
     function getFotoAlojamiento(aloj) {
       const lista = FOTOS_POR_TIPO[aloj.tipo] || FOTOS_POR_TIPO['Finca Cafetera'];
@@ -753,13 +782,37 @@
                   : 'bg-rose-500/20 text-rose-300 border-rose-500/35';
       return `<span class="px-2.5 py-1 rounded-full text-[11px] font-mono font-bold border ${color}">${estado}</span>`;
     }
-    async function api(url, cuerpo = null) {
-      const opciones = cuerpo === null ? {} : {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(cuerpo)
-      };
-      const res = await fetch(url, opciones);
-      return res.json();
+    // Perfil al que pertenece cada direccion de la API (las del huesped no piden sesion)
+    function perfilDeUrl(url) {
+      if (url.startsWith('/api/recepcion')) return 'recepcion';
+      if (url.startsWith('/api/admin')) return 'admin';
+      if (url.startsWith('/api/gerencia')) return 'gerente';
+      if (url.startsWith('/api/auditor')) return 'auditor';
+      return null;
     }
+    async function api(url, cuerpo = null) {
+      const headers = {};
+      const perfil = perfilDeUrl(url);
+      if (perfil && STATE.sesiones[perfil]) headers['Authorization'] = `Bearer ${STATE.sesiones[perfil].token}`;
+      const opciones = { headers };
+      if (cuerpo !== null) {
+        opciones.method = 'POST';
+        headers['Content-Type'] = 'application/json';
+        opciones.body = JSON.stringify(cuerpo);
+      }
+      const res = await fetch(url, opciones);
+      const data = await res.json();
+      if (res.status === 401 && perfil) {
+        olvidarSesion(perfil);
+        mostrarPerfil(perfil, data.detail);
+        throw new Error('sesion');
+      }
+      return data;
+    }
+    // Una peticion cortada porque la sesion vencio no es un error de la pagina
+    window.addEventListener('unhandledrejection', e => {
+      if (e.reason && e.reason.message === 'sesion') e.preventDefault();
+    });
     function showToast(mensaje, ok = true) {
       const box = document.getElementById('toast-box');
       box.className = `fixed bottom-6 right-6 z-50 max-w-md rounded-2xl p-4 shadow-2xl border text-xs font-semibold flex items-center gap-3 ${
@@ -799,10 +852,131 @@
           btn.classList.remove('active');
         }
       });
-      if (rol === 'recepcion') cargarRecepcion();
-      else if (rol === 'admin') cargarPanelAdmin(document.getElementById('adm-select-alojamiento').value);
-      else if (rol === 'gerente') { cargarGerente(); cargarLiquidaciones(); }
-      else if (rol === 'auditor') cargarAuditor();
+      if (rol !== 'cliente') mostrarPerfil(rol);
+      lucide.createIcons();
+    }
+
+    // =====================================================================
+    // Inicio de sesion del personal
+    // =====================================================================
+    const PERFILES = {
+      recepcion: { titulo: 'Recepción', icono: 'concierge-bell', ejemplo: 'recep001' },
+      admin:     { titulo: 'Administrador de alojamiento', icono: 'hotel', ejemplo: 'admin001' },
+      gerente:   { titulo: 'Gerencia', icono: 'crown', ejemplo: 'gerente1' },
+      auditor:   { titulo: 'Auditoría', icono: 'shield-check', ejemplo: 'auditor1' }
+    };
+
+    function guardarSesiones() {
+      try { sessionStorage.setItem('turismouq_sesiones', JSON.stringify(STATE.sesiones)); } catch (e) {}
+    }
+    function olvidarSesion(perfil) {
+      delete STATE.sesiones[perfil];
+      guardarSesiones();
+    }
+
+    // Sin sesion se ve solo el formulario; con sesion, la app del perfil
+    function mostrarPerfil(perfil, aviso = '') {
+      const sesion = STATE.sesiones[perfil];
+      const login = document.getElementById(`login-${perfil}`);
+      const app = document.getElementById(`app-${perfil}`);
+      if (!sesion) {
+        app.classList.add('hidden');
+        login.classList.remove('hidden');
+        login.innerHTML = htmlLogin(perfil, aviso);
+        lucide.createIcons();
+        setTimeout(() => document.getElementById(`login-usuario-${perfil}`)?.focus(), 50);
+        return;
+      }
+      login.classList.add('hidden');
+      app.classList.remove('hidden');
+      renderSesion(perfil);
+      if (perfil === 'recepcion') cargarRecepcion();
+      else if (perfil === 'admin') cargarPanelAdmin();
+      else if (perfil === 'gerente') { cargarGerente(); cargarLiquidaciones(); }
+      else if (perfil === 'auditor') cargarAuditor();
+    }
+
+    function htmlLogin(perfil, aviso) {
+      const p = PERFILES[perfil];
+      return `
+        <div class="max-w-md mx-auto mt-6 luxury-card rounded-[28px] p-8 space-y-5">
+          <div class="flex items-center gap-4">
+            <div class="w-12 h-12 rounded-2xl bg-amber-500/15 border border-amber-500/35 flex items-center justify-center text-amber-400">
+              <i data-lucide="${p.icono}" class="w-6 h-6"></i>
+            </div>
+            <div>
+              <h2 class="font-serif text-2xl font-bold text-white">${p.titulo}</h2>
+              <p class="text-xs text-emerald-100/70">Inicie sesión con su usuario de la base de datos.</p>
+            </div>
+          </div>
+          ${aviso ? `<div class="rounded-xl px-3 py-2.5 bg-amber-500/15 border border-amber-500/40 text-xs text-amber-100">${aviso}</div>` : ''}
+          <form onsubmit="event.preventDefault(); iniciarSesion('${perfil}')" class="space-y-3">
+            <div>
+              <label class="block text-xs text-emerald-200/80 mb-1">Usuario</label>
+              <input id="login-usuario-${perfil}" autocomplete="username" placeholder="Por ejemplo ${p.ejemplo}" class="w-full rounded-xl bg-[#06110c] border border-emerald-500/30 px-3.5 py-2.5 text-sm text-white focus:border-amber-400 focus:outline-none" />
+            </div>
+            <div>
+              <label class="block text-xs text-emerald-200/80 mb-1">Clave</label>
+              <input id="login-clave-${perfil}" type="password" autocomplete="current-password" class="w-full rounded-xl bg-[#06110c] border border-emerald-500/30 px-3.5 py-2.5 text-sm text-white focus:border-amber-400 focus:outline-none" />
+            </div>
+            <div id="login-error-${perfil}" class="hidden rounded-xl px-3 py-2.5 bg-rose-500/15 border border-rose-500/40 text-xs text-rose-100"></div>
+            <button type="submit" id="login-boton-${perfil}" class="w-full py-3 rounded-2xl bg-gradient-to-r from-amber-500 via-amber-400 to-emerald-400 hover:brightness-110 text-slate-950 font-extrabold text-sm flex items-center justify-center gap-2 shadow-xl shadow-amber-500/20 transition">
+              <i data-lucide="log-in" class="w-4 h-4"></i><span>Iniciar sesión</span>
+            </button>
+          </form>
+          <p class="text-[11px] text-emerald-200/50 text-center">Lo que puede ver y hacer lo decide su rol en Oracle.</p>
+        </div>`;
+    }
+
+    async function iniciarSesion(perfil) {
+      const usuario = document.getElementById(`login-usuario-${perfil}`).value.trim();
+      const clave = document.getElementById(`login-clave-${perfil}`).value;
+      const error = document.getElementById(`login-error-${perfil}`);
+      if (!usuario || !clave) {
+        error.textContent = 'Escriba el usuario y la clave.';
+        error.classList.remove('hidden');
+        return;
+      }
+      const boton = document.getElementById(`login-boton-${perfil}`);
+      boton.disabled = true;
+      const res = await fetch('/api/login', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ perfil, usuario, clave })
+      });
+      const data = await res.json();
+      boton.disabled = false;
+      if (!data.ok) {
+        error.textContent = data.mensaje || data.detail || 'No se pudo iniciar sesión.';
+        error.classList.remove('hidden');
+        return;
+      }
+      STATE.sesiones[perfil] = { token: data.token, usuario: data.usuario, sede: data.sede };
+      guardarSesiones();
+      showToast(`Sesión iniciada como ${data.usuario}.`);
+      mostrarPerfil(perfil);
+    }
+
+    async function cerrarSesion(perfil) {
+      const sesion = STATE.sesiones[perfil];
+      if (sesion) {
+        await fetch('/api/logout', { method: 'POST', headers: { 'Authorization': `Bearer ${sesion.token}` } });
+      }
+      olvidarSesion(perfil);
+      mostrarPerfil(perfil);
+    }
+
+    function renderSesion(perfil) {
+      const sesion = STATE.sesiones[perfil];
+      const sede = sesion.sede ? `<div class="text-[11px] text-emerald-200/60">${sesion.sede.nombre} · ${sesion.sede.municipio}</div>` : '';
+      document.getElementById(`sesion-${perfil}`).innerHTML = `
+        <div class="flex items-center gap-3 rounded-xl bg-[#06110c] border border-emerald-500/25 px-3 py-2">
+          <i data-lucide="user-check" class="w-4 h-4 text-emerald-400"></i>
+          <div>
+            <div class="text-xs font-bold text-white font-mono">${sesion.usuario}</div>
+            ${sede}
+          </div>
+          <button onclick="cerrarSesion('${perfil}')" class="ml-1 px-2.5 py-1.5 rounded-lg bg-rose-500/15 hover:bg-rose-500/30 border border-rose-500/35 text-rose-200 text-[11px] font-bold">Cerrar sesión</button>
+        </div>`;
       lucide.createIcons();
     }
 
@@ -823,8 +997,6 @@
       const opciones = STATE.alojamientos.map(a =>
         `<option value="${a.id_alojamiento}">${a.nombre} · ${a.municipio}</option>`).join('');
       document.getElementById('res-select-alojamiento').innerHTML = opciones;
-      document.getElementById('rec-select-alojamiento').innerHTML = `<option value="">Todas las sedes</option>` + opciones;
-      document.getElementById('adm-select-alojamiento').innerHTML = opciones;
 
       document.getElementById('res-input-in').value = sumarDias(7);
       document.getElementById('res-input-out').value = sumarDias(10);
@@ -1060,12 +1232,12 @@
       alerta.innerHTML = `
         <div class="rounded-2xl p-4 bg-emerald-500/15 border border-emerald-400/50 text-xs text-emerald-50 space-y-1.5">
           <div class="font-extrabold text-emerald-300 text-sm flex items-center gap-2"><i data-lucide="award" class="w-4 h-4 text-amber-400"></i> ¡Reserva #${r.id_reserva} confirmada!</div>
-          <div><strong>Huésped:</strong> ${r.cliente}</div>
+          <div><strong>Huésped:</strong> ${STATE.clienteReserva.nombre}</div>
           <div><strong>Dónde:</strong> ${r.alojamiento} (${r.municipio}) · Habitación ${r.hab_numero}</div>
           <div><strong>Fechas:</strong> ${fmtFecha(r.fecha_checkin)} → ${fmtFecha(r.fecha_checkout)} · ${r.num_huespedes} huésped${r.num_huespedes > 1 ? 'es' : ''}</div>
           <div><strong>Valor:</strong> <span class="font-mono font-bold text-amber-300">${fmtCOP(r.valor_total)}</span></div>
         </div>`;
-      showToast(`Reserva #${r.id_reserva} registrada para ${r.cliente}.`);
+      showToast(`Reserva #${r.id_reserva} registrada para ${STATE.clienteReserva.nombre}.`);
       lucide.createIcons();
       await cotizarEstadiaActual();
     }
@@ -1079,8 +1251,7 @@
     };
 
     async function cargarRecepcion() {
-      const idAloj = document.getElementById('rec-select-alojamiento').value;
-      const resumen = await api(`/api/recepcion/resumen${idAloj ? '?id_alojamiento=' + idAloj : ''}`);
+      const resumen = await api('/api/recepcion/resumen');
       ['llegadas', 'alojados', 'salidas', 'proximas'].forEach(v =>
         document.getElementById(`rec-kpi-${v}`).textContent = fmtNum(resumen[v]));
       await cargarListaRecepcion();
@@ -1109,9 +1280,7 @@
       document.getElementById('rec-titulo-lista').textContent = TITULOS_RECEPCION[vista];
 
       const params = new URLSearchParams({ vista });
-      const idAloj = document.getElementById('rec-select-alojamiento').value;
       const q = document.getElementById('rec-input-busqueda').value.trim();
-      if (idAloj) params.append('id_alojamiento', idAloj);
       if (q) params.append('busqueda', q);
       const data = await api(`/api/recepcion/reservas?${params}`);
 
@@ -1127,7 +1296,7 @@
           <tr onclick="abrirCuenta(${r.id_reserva})" class="cursor-pointer hover:bg-emerald-500/5 ${STATE.reservaAbierta === r.id_reserva ? 'bg-amber-500/10' : ''}">
             <td class="py-3 px-3 font-mono font-bold text-amber-300">#${r.id_reserva}</td>
             <td class="py-3 px-3"><div class="font-bold text-white">${r.cliente}</div><div class="text-[11px] text-emerald-200/60">C.C. ${r.documento}</div></td>
-            <td class="py-3 px-3"><div class="text-white">${r.alojamiento}</div><div class="text-[11px] font-mono text-emerald-300">Hab. ${r.habitaciones} · ${r.municipio}</div></td>
+            <td class="py-3 px-3"><div class="text-white font-mono">Hab. ${r.habitaciones}</div><div class="text-[11px] text-emerald-200/60">${fmtCOP(r.valor_total)}</div></td>
             <td class="py-3 px-3 font-mono">
               <div>${fmtFecha(r.fecha_checkin)} → ${fmtFecha(r.fecha_checkout)}</div>
               <div class="text-[11px] ${atrasada ? 'text-rose-300 font-bold' : 'text-emerald-200/60'}">${atrasada ? 'Salida atrasada' : `${r.noches} noches · ${r.num_huespedes} huésp.`}</div>
@@ -1253,19 +1422,19 @@
     }
 
     function irAReservaMostrador() {
-      const idAloj = document.getElementById('rec-select-alojamiento').value;
+      const sede = STATE.sesiones.recepcion && STATE.sesiones.recepcion.sede;
       cambiarRol('cliente');
-      if (idAloj) seleccionarAlojamientoParaReserva(idAloj);
+      if (sede) seleccionarAlojamientoParaReserva(sede.id_alojamiento);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
     // =====================================================================
     // ADMINISTRADOR
     // =====================================================================
-    async function cargarPanelAdmin(idAlojamiento) {
-      const aloj = STATE.alojamientos.find(a => a.id_alojamiento === Number(idAlojamiento));
-      if (aloj) document.getElementById('adm-titulo-alojamiento').textContent = `${aloj.nombre} · ${aloj.municipio}`;
-      const data = await api(`/api/alojamientos/${idAlojamiento}`);
+    async function cargarPanelAdmin() {
+      const sede = STATE.sesiones.admin && STATE.sesiones.admin.sede;
+      if (sede) document.getElementById('adm-titulo-alojamiento').textContent = `${sede.nombre} · ${sede.municipio}`;
+      const data = await api('/api/admin/panel');
       STATE.admin = data;
 
       renderHabitacionesAdmin();
@@ -1349,7 +1518,7 @@
       const data = await api(`/api/admin/habitaciones/${idHab}/estado`, { estado });
       if (!data.ok) { showToast(data.mensaje, false); return; }
       showToast(`Habitación ${numero}: ${estado.toLowerCase()}.`);
-      cargarPanelAdmin(document.getElementById('adm-select-alojamiento').value);
+      cargarPanelAdmin();
     }
 
     async function guardarTarifa(idTarifa) {
@@ -1357,20 +1526,19 @@
       const data = await api(`/api/admin/tarifas/${idTarifa}`, { valor_noche });
       if (!data.ok) { showToast(data.mensaje, false); return; }
       showToast('Precio actualizado. El cambio quedó registrado en la auditoría.');
-      cargarPanelAdmin(document.getElementById('adm-select-alojamiento').value);
+      cargarPanelAdmin();
     }
 
     async function aplicarAjusteTarifas() {
-      const idAloj = Number(document.getElementById('adm-select-alojamiento').value);
       const anio = Number(document.getElementById('adm-ajuste-anio').value);
       const porcentaje = Number(document.getElementById('adm-ajuste-pct').value);
       if (!anio) { showToast('Este alojamiento no tiene temporadas futuras para ajustar.', false); return; }
-      const aloj = STATE.alojamientos.find(a => a.id_alojamiento === idAloj);
-      if (!confirm(`¿${porcentaje >= 0 ? 'Subir' : 'Bajar'} ${Math.abs(porcentaje)}% todos los precios de ${aloj.nombre} en las temporadas de ${anio} que aún no empiezan?`)) return;
-      const data = await api('/api/admin/tarifas-ajuste', { id_alojamiento: idAloj, anio, porcentaje });
+      const sede = STATE.sesiones.admin.sede;
+      if (!confirm(`¿${porcentaje >= 0 ? 'Subir' : 'Bajar'} ${Math.abs(porcentaje)}% todos los precios de ${sede.nombre} en las temporadas de ${anio} que aún no empiezan?`)) return;
+      const data = await api('/api/admin/tarifas-ajuste', { anio, porcentaje });
       if (!data.ok) { showToast(data.mensaje, false); return; }
       showToast(`Se ajustaron ${data.afectadas} precios. Quedaron en la auditoría.`);
-      cargarPanelAdmin(idAloj);
+      cargarPanelAdmin();
     }
 
     // =====================================================================
@@ -1618,11 +1786,25 @@
       document.getElementById('aud-lista-pagos').innerHTML = data.pagos.map(p => `
         <div class="sub-glass rounded-xl p-3 flex items-center justify-between text-xs">
           <div>
-            <div class="font-bold text-white">Reserva #${p.id_reserva} · ${p.cliente}</div>
+            <div class="font-bold text-white">Pago #${p.id_pago} · Reserva #${p.id_reserva}</div>
             <div class="text-[11px] text-emerald-200/60">${p.alojamiento} · ${fmtFecha(p.fecha_pago)} · ${p.metodo_pago.replace('_', ' ')}</div>
           </div>
           <div class="font-mono font-bold text-emerald-300">${fmtCOP(p.valor)}</div>
         </div>`).join('');
+
+      document.getElementById('aud-total-intentos').textContent = `(${fmtNum(data.intentos.length)})`;
+      document.getElementById('aud-tabla-intentos').innerHTML = data.intentos.length ? data.intentos.map(i => {
+        const [fecha, hora] = i.fecha_error.split(' ');
+        return `
+          <tr class="hover:bg-emerald-500/5">
+            <td class="py-2.5 px-3 font-mono"><div class="text-white">${fmtFecha(fecha)}</div><div class="text-[11px] text-emerald-200/60">${hora}</div></td>
+            <td class="py-2.5 px-3 font-bold text-amber-300">${i.operacion}</td>
+            <td class="py-2.5 px-3 font-mono"><div class="text-white">Cliente ${i.id_cliente ?? '—'} · Hab. ${i.id_habitacion ?? '—'}</div><div class="text-[11px] text-emerald-200/60">${fmtFecha(i.fecha_in)} → ${fmtFecha(i.fecha_out)}</div></td>
+            <td class="py-2.5 px-3"><div class="font-mono text-rose-300">${i.codigo_error}</div><div class="text-[11px] text-emerald-100/80">${i.mensaje}</div></td>
+            <td class="py-2.5 px-3 font-mono text-emerald-200/80">${i.usuario_bd}</td>
+          </tr>`;
+      }).join('') :
+        `<tr><td colspan="5" class="py-12 text-center text-emerald-200/50">No hay intentos fallidos registrados.</td></tr>`;
     }
 
     // =====================================================================

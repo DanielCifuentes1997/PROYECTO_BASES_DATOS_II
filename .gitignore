@@ -1,6 +1,9 @@
 # Documentos personales y material de estudio (no se suben)
 Documentos/
 
+# Claves de la interfaz (se configuran a partir de webapp/.env.ejemplo)
+.env
+
 # Archivos que crea Python al ejecutar la interfaz
 __pycache__/
 *.pyc
