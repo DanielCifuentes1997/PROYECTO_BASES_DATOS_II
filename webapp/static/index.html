@@ -872,6 +872,17 @@
     function olvidarSesion(perfil) {
       delete STATE.sesiones[perfil];
       guardarSesiones();
+      // Lo que mostraba el usuario anterior no debe quedar en pantalla
+      if (perfil === 'recepcion') {
+        STATE.reservaAbierta = null;
+        document.getElementById('rec-tabla-body').innerHTML = '';
+        document.getElementById('rec-input-busqueda').value = '';
+        document.getElementById('cuenta-titulo').textContent = 'Selecciona una reserva';
+        document.getElementById('cuenta-body').innerHTML = `
+          <div class="sub-glass rounded-2xl p-6 text-center text-emerald-200/60">
+            Aquí verás las noches por temporada, los servicios consumidos, lo pagado y lo que falta por pagar.
+          </div>`;
+      }
     }
 
     // Sin sesion se ve solo el formulario; con sesion, la app del perfil

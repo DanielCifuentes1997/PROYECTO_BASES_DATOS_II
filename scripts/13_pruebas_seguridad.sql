@@ -6,8 +6,11 @@
 -- Ejecutar despues del script 12, desde cualquier usuario (el script hace
 -- CONNECT con cada uno).
 --
--- Datos usados: la reserva 35 y la tarifa 8001 son del alojamiento 1; la
--- reserva 5, la tarifa 8085 y la habitacion 13 son del alojamiento 13.
+-- Datos usados: al empezar, el gerente (que puede leer todo el negocio)
+-- busca una reserva finalizada y una tarifa futura del alojamiento 1, y una
+-- reserva, una tarifa y una habitacion del alojamiento 13. Se guardan en
+-- variables de SQL*Plus (&v_reserva_propia, &v_reserva_otra, etc.) porque los
+-- numeros de las reservas cambian cada vez que se carga la base.
 --
 -- Errores que se esperan:
 --   ORA-00942  la tabla o vista no existe: el usuario no tiene ningun permiso
@@ -18,11 +21,44 @@
 --              paquete.
 --   ORA-20013  el paquete de su rol no lo deja operar sobre otra sede.
 
-SET DEFINE OFF;
+SET DEFINE ON;
+SET VERIFY OFF;
 SET SERVEROUTPUT ON;
 SET LINESIZE 140;
 SET PAGESIZE 50;
 SET FEEDBACK OFF;
+
+-- Busqueda de los datos de prueba
+CONNECT gerente1/"Gerente.2026"@localhost:1521/XEPDB1
+COLUMN reserva_propia NEW_VALUE v_reserva_propia NOPRINT
+COLUMN reserva_otra   NEW_VALUE v_reserva_otra   NOPRINT
+COLUMN tarifa_propia  NEW_VALUE v_tarifa_propia  NOPRINT
+COLUMN tarifa_otra    NEW_VALUE v_tarifa_otra    NOPRINT
+COLUMN habitacion_otra NEW_VALUE v_habitacion_otra NOPRINT
+SELECT TO_CHAR(reserva_propia) AS reserva_propia, TO_CHAR(reserva_otra) AS reserva_otra,
+       TO_CHAR(tarifa_propia) AS tarifa_propia, TO_CHAR(tarifa_otra) AS tarifa_otra,
+       TO_CHAR(habitacion_otra) AS habitacion_otra
+FROM  (SELECT (SELECT MIN(r.id_reserva) FROM turismouq.reserva r
+               JOIN turismouq.reserva_habitacion rh ON rh.id_reserva = r.id_reserva
+               JOIN turismouq.habitacion h ON h.id_habitacion = rh.id_habitacion
+               WHERE h.id_alojamiento = 1 AND r.estado = 'FINALIZADA') AS reserva_propia,
+              (SELECT MIN(r.id_reserva) FROM turismouq.reserva r
+               JOIN turismouq.reserva_habitacion rh ON rh.id_reserva = r.id_reserva
+               JOIN turismouq.habitacion h ON h.id_habitacion = rh.id_habitacion
+               WHERE h.id_alojamiento = 13) AS reserva_otra,
+              (SELECT MIN(tf.id_tarifa) FROM turismouq.tarifa tf
+               JOIN turismouq.habitacion h ON h.id_habitacion = tf.id_habitacion
+               JOIN turismouq.temporada t ON t.id_temporada = tf.id_temporada
+               WHERE h.id_alojamiento = 1 AND t.fecha_inicio > SYSDATE) AS tarifa_propia,
+              (SELECT MIN(tf.id_tarifa) FROM turismouq.tarifa tf
+               JOIN turismouq.habitacion h ON h.id_habitacion = tf.id_habitacion
+               JOIN turismouq.temporada t ON t.id_temporada = tf.id_temporada
+               WHERE h.id_alojamiento = 13 AND t.fecha_inicio > SYSDATE) AS tarifa_otra,
+              (SELECT MIN(id_habitacion) FROM turismouq.habitacion
+               WHERE id_alojamiento = 13) AS habitacion_otra
+       FROM   dual);
+PROMPT Datos de prueba: reserva &v_reserva_propia (alojamiento 1), reserva &v_reserva_otra (alojamiento 13),
+PROMPT tarifa &v_tarifa_propia (alojamiento 1), tarifa &v_tarifa_otra y habitacion &v_habitacion_otra (alojamiento 13).
 
 -- =====================================================================
 PROMPT
@@ -43,20 +79,20 @@ PROMPT S2. Leer la tabla RESERVA directamente (debe fallar con ORA-00942)
 SELECT COUNT(*) FROM turismouq.reserva;
 
 PROMPT S3. Modificar la tabla RESERVA directamente (debe fallar con ORA-00942)
-UPDATE turismouq.reserva SET estado = 'CANCELADA' WHERE id_reserva = 35;
+UPDATE turismouq.reserva SET estado = 'CANCELADA' WHERE id_reserva = &v_reserva_propia;
 
-PROMPT S4. Check-out de la reserva 5, que es del alojamiento 13 (debe fallar con ORA-20013)
+PROMPT S4. Check-out de la reserva &v_reserva_otra, que es del alojamiento 13 (debe fallar con ORA-20013)
 BEGIN
-  turismouq.pkg_recepcion.sp_checkout(p_id_reserva => 5);
+  turismouq.pkg_recepcion.sp_checkout(p_id_reserva => &v_reserva_otra);
 EXCEPTION
   WHEN OTHERS THEN DBMS_OUTPUT.PUT_LINE(SQLERRM);
 END;
 /
 
-PROMPT S5. Check-out de la reserva 35, que si es de su sede: pasa el control de sede
+PROMPT S5. Check-out de la reserva &v_reserva_propia, que si es de su sede: pasa el control de sede
 PROMPT     y la rechaza la regla del negocio porque ya esta FINALIZADA (ORA-20008)
 BEGIN
-  turismouq.pkg_recepcion.sp_checkout(p_id_reserva => 35);
+  turismouq.pkg_recepcion.sp_checkout(p_id_reserva => &v_reserva_propia);
 EXCEPTION
   WHEN OTHERS THEN DBMS_OUTPUT.PUT_LINE(SQLERRM);
 END;
@@ -64,7 +100,7 @@ END;
 
 PROMPT S6. Usar el paquete principal o el del administrador (debe fallar con PLS-00201)
 BEGIN
-  turismouq.pkg_turismouq.sp_cancelar_reserva(p_id_reserva => 35);
+  turismouq.pkg_turismouq.sp_cancelar_reserva(p_id_reserva => &v_reserva_propia);
 END;
 /
 BEGIN
@@ -110,26 +146,26 @@ FROM   dual;
 PROMPT A2. Ver las reservas de recepcion (debe fallar con ORA-00942)
 SELECT COUNT(*) FROM turismouq.v_sede_reservas;
 
-PROMPT A3. Cambiar la tarifa 8085, del alojamiento 13 (debe fallar con ORA-20013)
+PROMPT A3. Cambiar la tarifa &v_tarifa_otra, del alojamiento 13 (debe fallar con ORA-20013)
 BEGIN
-  turismouq.pkg_administracion.sp_actualizar_tarifa(p_id_tarifa => 8085, p_valor_noche => 300000);
+  turismouq.pkg_administracion.sp_actualizar_tarifa(p_id_tarifa => &v_tarifa_otra, p_valor_noche => 300000);
 EXCEPTION
   WHEN OTHERS THEN DBMS_OUTPUT.PUT_LINE(SQLERRM);
 END;
 /
 
-PROMPT A4. Poner en cero la tarifa 8001, de su sede: pasa el control de sede y la
+PROMPT A4. Poner en cero la tarifa &v_tarifa_propia, de su sede: pasa el control de sede y la
 PROMPT     rechaza la regla del negocio (ORA-20011)
 BEGIN
-  turismouq.pkg_administracion.sp_actualizar_tarifa(p_id_tarifa => 8001, p_valor_noche => 0);
+  turismouq.pkg_administracion.sp_actualizar_tarifa(p_id_tarifa => &v_tarifa_propia, p_valor_noche => 0);
 EXCEPTION
   WHEN OTHERS THEN DBMS_OUTPUT.PUT_LINE(SQLERRM);
 END;
 /
 
-PROMPT A5. Cambiar el estado de la habitacion 13, del alojamiento 13 (debe fallar con ORA-20013)
+PROMPT A5. Cambiar el estado de la habitacion &v_habitacion_otra, del alojamiento 13 (debe fallar con ORA-20013)
 BEGIN
-  turismouq.pkg_administracion.sp_cambiar_estado_habitacion(p_id_habitacion => 13,
+  turismouq.pkg_administracion.sp_cambiar_estado_habitacion(p_id_habitacion => &v_habitacion_otra,
                                                             p_estado => 'DISPONIBLE');
 EXCEPTION
   WHEN OTHERS THEN DBMS_OUTPUT.PUT_LINE(SQLERRM);
@@ -137,7 +173,7 @@ END;
 /
 
 PROMPT A6. Modificar la tabla TARIFA directamente (debe fallar con ORA-00942)
-UPDATE turismouq.tarifa SET valor_noche = 1 WHERE id_tarifa = 8001;
+UPDATE turismouq.tarifa SET valor_noche = 1 WHERE id_tarifa = &v_tarifa_propia;
 
 
 -- =====================================================================
@@ -155,7 +191,7 @@ SELECT (SELECT COUNT(*) FROM turismouq.reserva)     AS reservas,
 FROM   dual;
 
 PROMPT G2. Borrar reservas (debe fallar con ORA-01031: las ve pero no las puede modificar)
-DELETE FROM turismouq.reserva WHERE id_reserva = 35;
+DELETE FROM turismouq.reserva WHERE id_reserva = &v_reserva_propia;
 
 PROMPT G3. Usa el paquete de gerencia: reporte de un mes que no esta liquidado (ORA-20007)
 BEGIN
