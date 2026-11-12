@@ -62,6 +62,12 @@ GRANT SELECT ON sys.v_$locked_object TO turismouq;
 
 GRANT SELECT ON sys.dba_objects TO turismouq;
 
+-- Entrega 3: medir las lecturas logicas de cada consulta en el script de
+-- indices (estadisticas de la propia sesion).
+GRANT SELECT ON sys.v_$mystat TO turismouq;
+
+GRANT SELECT ON sys.v_$statname TO turismouq;
+
 PROMPT Tablespaces del proyecto:
 COLUMN tablespace_name FORMAT A26
 COLUMN file_name       FORMAT A62
