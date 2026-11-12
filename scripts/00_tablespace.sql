@@ -54,6 +54,14 @@ GRANT CREATE MATERIALIZED VIEW TO turismouq;
 
 GRANT CREATE JOB TO turismouq;
 
+-- Entrega 3: consultar las sesiones y los bloqueos durante el experimento de
+-- concurrencia (quien espera a quien y sobre que objeto).
+GRANT SELECT ON sys.v_$session TO turismouq;
+
+GRANT SELECT ON sys.v_$locked_object TO turismouq;
+
+GRANT SELECT ON sys.dba_objects TO turismouq;
+
 PROMPT Tablespaces del proyecto:
 COLUMN tablespace_name FORMAT A26
 COLUMN file_name       FORMAT A62

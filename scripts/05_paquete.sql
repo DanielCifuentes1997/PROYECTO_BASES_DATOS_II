@@ -276,12 +276,16 @@ CREATE OR REPLACE PACKAGE BODY pkg_turismouq IS
         'El cliente ' || p_id_cliente || ' no existe.');
     END IF;
 
-    -- 3. Habitacion: que exista, que este en servicio y que tenga capacidad
+    -- 3. Habitacion: que exista, que este en servicio y que tenga capacidad.
+    -- Se lee con FOR UPDATE (Entrega 3, concurrencia): la fila de la
+    -- habitacion queda bloqueada hasta el COMMIT, asi otra sesion que intente
+    -- reservarla al mismo tiempo espera y despues ve esta reserva.
     BEGIN
       SELECT estado, capacidad
       INTO   v_estado, v_capacidad
       FROM   habitacion
-      WHERE  id_habitacion = p_id_habitacion;
+      WHERE  id_habitacion = p_id_habitacion
+      FOR UPDATE;
     EXCEPTION
       WHEN NO_DATA_FOUND THEN
         RAISE_APPLICATION_ERROR(c_err_habitacion,
