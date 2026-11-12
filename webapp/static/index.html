@@ -5,27 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>TurismoUQ · Paisaje Cultural Cafetero · Plataforma Oficial del Quindío</title>
   <link rel="icon" href="data:,">
-  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/static/estilos.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;0,800;1,600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <script>
-    tailwind.config = {
-      darkMode: 'class',
-      theme: {
-        extend: {
-          fontFamily: {
-            serif: ['"Playfair Display"', 'serif'],
-            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
-            mono: ['"JetBrains Mono"', 'monospace'],
-          }
-        }
-      }
-    }
-  </script>
   <style>
     body {
       background-color: #050c09;
@@ -607,7 +593,10 @@
           </div>
         </div>
         <div class="lg:col-span-8 luxury-card rounded-3xl p-6 space-y-4">
-          <h3 class="text-base font-bold text-white" id="ger-liq-titulo">Detalle de la liquidación</h3>
+          <div>
+            <h3 class="text-base font-bold text-white" id="ger-liq-titulo">Detalle de la liquidación</h3>
+            <p class="text-xs text-emerald-100/60">Haz clic en un alojamiento para ver, reserva por reserva, lo que entró en su liquidación.</p>
+          </div>
           <div class="overflow-x-auto max-h-[560px] rounded-2xl border border-emerald-500/15">
             <table class="w-full text-left border-collapse text-xs font-mono">
               <thead class="sticky top-0 bg-[#08150f] text-emerald-200/75 uppercase border-b border-emerald-500/20">
@@ -1521,8 +1510,11 @@
       document.getElementById('ger-liq-titulo').textContent = data.periodo ? `Detalle de ${fmtPeriodo(data.periodo)}` : 'Detalle de la liquidación';
       const tbody = document.getElementById('ger-liq-tabla');
       tbody.innerHTML = data.detalle.length ? data.detalle.map(d => `
-        <tr class="hover:bg-emerald-500/5">
-          <td class="py-2.5 px-3 font-sans"><div class="font-bold text-white">${d.alojamiento}</div><div class="text-[11px] text-emerald-200/60">${d.municipio}</div></td>
+        <tr id="liq-fila-${d.id_alojamiento}" onclick="verReservasLiquidacion('${data.periodo}', ${d.id_alojamiento})" class="cursor-pointer hover:bg-emerald-500/5" title="Ver las reservas de este alojamiento">
+          <td class="py-2.5 px-3 font-sans">
+            <div class="font-bold text-white flex items-center gap-1.5"><i data-lucide="chevron-right" class="liq-flecha w-3.5 h-3.5 text-amber-400 transition-transform"></i>${d.alojamiento}</div>
+            <div class="text-[11px] text-emerald-200/60 pl-5">${d.municipio}</div>
+          </td>
           <td class="py-2.5 px-3 text-right">${d.reservas}</td>
           <td class="py-2.5 px-3 text-right" title="Alojamiento ${fmtCOP(d.ingreso_alojamiento)} + servicios ${fmtCOP(d.ingreso_servicios)}">${fmtCOP(Number(d.ingreso_alojamiento) + Number(d.ingreso_servicios))}</td>
           <td class="py-2.5 px-3 text-right text-amber-300">${fmtCOP(d.valor_comision)}</td>
@@ -1530,6 +1522,49 @@
         </tr>`).join('') :
         `<tr><td colspan="5" class="py-10 text-center text-emerald-200/50">Este mes todavía no está liquidado.</td></tr>`;
       lucide.createIcons();
+    }
+
+    // Despliega debajo de un alojamiento las reservas que entraron en su liquidación
+    async function verReservasLiquidacion(periodo, idAlojamiento) {
+      const fila = document.getElementById(`liq-fila-${idAlojamiento}`);
+      const abierta = document.getElementById(`liq-detalle-${idAlojamiento}`);
+      if (abierta) {
+        abierta.remove();
+        fila.querySelector('.liq-flecha').style.transform = '';
+        return;
+      }
+      const data = await api(`/api/gerencia/liquidaciones/${periodo}/${idAlojamiento}`);
+      fila.querySelector('.liq-flecha').style.transform = 'rotate(90deg)';
+      fila.insertAdjacentHTML('afterend', `
+        <tr id="liq-detalle-${idAlojamiento}">
+          <td colspan="5" class="px-3 pb-3 pt-1 bg-[#050c09]/60">
+            <table class="w-full text-[11px] font-mono border border-amber-500/20 rounded-xl overflow-hidden">
+              <thead class="bg-amber-500/10 text-amber-200/80 uppercase">
+                <tr>
+                  <th class="py-1.5 px-2 text-left"># Reserva</th>
+                  <th class="py-1.5 px-2 text-left">Huésped</th>
+                  <th class="py-1.5 px-2 text-left">Estadía</th>
+                  <th class="py-1.5 px-2 text-right">Noches</th>
+                  <th class="py-1.5 px-2 text-right">Alojamiento</th>
+                  <th class="py-1.5 px-2 text-right">Servicios</th>
+                  <th class="py-1.5 px-2 text-right">Total</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-emerald-500/10">
+                ${data.reservas.map(r => `
+                  <tr>
+                    <td class="py-1.5 px-2 text-amber-300">#${r.id_reserva}</td>
+                    <td class="py-1.5 px-2 font-sans text-white">${r.cliente}</td>
+                    <td class="py-1.5 px-2 text-emerald-200/80">${fmtFecha(r.fecha_checkin)} → ${fmtFecha(r.fecha_checkout)}</td>
+                    <td class="py-1.5 px-2 text-right">${r.noches}</td>
+                    <td class="py-1.5 px-2 text-right">${fmtCOP(r.valor_alojamiento)}</td>
+                    <td class="py-1.5 px-2 text-right">${fmtCOP(r.valor_servicios)}</td>
+                    <td class="py-1.5 px-2 text-right font-bold text-emerald-300">${fmtCOP(r.valor_total)}</td>
+                  </tr>`).join('')}
+              </tbody>
+            </table>
+          </td>
+        </tr>`);
     }
 
     async function liquidarMes() {

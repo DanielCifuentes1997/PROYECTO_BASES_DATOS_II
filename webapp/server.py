@@ -718,7 +718,7 @@ def liquidaciones(periodo: Optional[str] = Query(None)):
     """)
 
     detalle = consultar("""
-        SELECT a.nombre AS alojamiento, m.nombre AS municipio, l.reservas,
+        SELECT l.id_alojamiento, a.nombre AS alojamiento, m.nombre AS municipio, l.reservas,
                l.ingreso_alojamiento, l.ingreso_servicios, l.porcentaje_comision,
                l.valor_comision, l.valor_a_pagar
         FROM   liquidacion_mensual l
@@ -730,6 +730,23 @@ def liquidaciones(periodo: Optional[str] = Query(None)):
 
     return {"periodos": [p["periodo"] for p in periodos], "periodo": periodo,
             "liquidados": liquidados, "detalle": detalle}
+
+
+@app.get("/api/gerencia/liquidaciones/{periodo}/{id_alojamiento}")
+def detalle_liquidacion(periodo: str, id_alojamiento: int):
+    # Las reservas que entraron en la liquidacion de un alojamiento, una por una
+    reservas = consultar("""
+        SELECT d.id_reserva, c.nombre AS cliente, c.documento,
+               TO_CHAR(d.fecha_checkin, 'YYYY-MM-DD') AS fecha_checkin,
+               TO_CHAR(d.fecha_checkout, 'YYYY-MM-DD') AS fecha_checkout,
+               d.noches, d.valor_alojamiento, d.valor_servicios, d.valor_total
+        FROM   liquidacion_detalle d
+        JOIN   cliente c ON c.id_cliente = d.id_cliente
+        WHERE  d.id_alojamiento = :aloj
+          AND  d.periodo = TRUNC(TO_DATE(:per, 'YYYY-MM-DD'), 'MM')
+        ORDER  BY d.fecha_checkout, d.id_reserva
+    """, {"aloj": id_alojamiento, "per": periodo})
+    return {"reservas": reservas}
 
 
 @app.post("/api/gerencia/liquidar")

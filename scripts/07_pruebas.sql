@@ -323,7 +323,51 @@ SELECT 'Servicios',
 FROM   dual;
 
 PROMPT
-PROMPT Prueba 3.4: volver a liquidar junio de 2025
+PROMPT Prueba 3.4: el detalle reserva por reserva de cada alojamiento suma exactamente su total
+PROMPT             (alojamientos_que_no_cuadran debe dar 0)
+SELECT COUNT(*) AS alojamientos_liquidados,
+       SUM(CASE WHEN l.reservas            <> d.reservas
+                  OR l.ingreso_alojamiento <> d.alojamiento
+                  OR l.ingreso_servicios   <> d.servicios
+                THEN 1 ELSE 0 END) AS alojamientos_que_no_cuadran,
+       SUM(d.reservas) AS reservas_en_el_detalle
+FROM   liquidacion_mensual l
+JOIN  (SELECT id_alojamiento, periodo, COUNT(*) AS reservas,
+              SUM(valor_alojamiento) AS alojamiento, SUM(valor_servicios) AS servicios
+       FROM   liquidacion_detalle
+       GROUP  BY id_alojamiento, periodo) d
+       ON d.id_alojamiento = l.id_alojamiento AND d.periodo = l.periodo
+WHERE  l.periodo = DATE '2025-06-01';
+
+PROMPT
+PROMPT Prueba 3.5: reporte de la liquidacion de junio de 2025 del alojamiento que mas recibe,
+PROMPT             reserva por reserva
+DECLARE
+  v_id_alojamiento liquidacion_mensual.id_alojamiento%TYPE;
+BEGIN
+  SELECT id_alojamiento
+  INTO   v_id_alojamiento
+  FROM  (SELECT id_alojamiento FROM liquidacion_mensual
+         WHERE  periodo = DATE '2025-06-01'
+         ORDER  BY valor_a_pagar DESC)
+  WHERE  ROWNUM = 1;
+
+  pkg_turismouq.sp_reporte_liquidacion(p_periodo        => DATE '2025-06-01',
+                                       p_id_alojamiento => v_id_alojamiento);
+END;
+/
+
+PROMPT
+PROMPT Prueba 3.6: reporte de un mes que no esta liquidado
+BEGIN
+  pkg_turismouq.sp_reporte_liquidacion(p_periodo => DATE '2025-02-01');
+EXCEPTION
+  WHEN OTHERS THEN DBMS_OUTPUT.PUT_LINE('   ' || SQLERRM);
+END;
+/
+
+PROMPT
+PROMPT Prueba 3.7: volver a liquidar junio de 2025
 BEGIN
   pkg_turismouq.sp_liquidar_mes(p_periodo => DATE '2025-06-01');
 EXCEPTION
@@ -332,7 +376,7 @@ END;
 /
 
 PROMPT
-PROMPT Prueba 3.5: liquidar el mes actual, que todavia no termina
+PROMPT Prueba 3.8: liquidar el mes actual, que todavia no termina
 BEGIN
   pkg_turismouq.sp_liquidar_mes(p_periodo => SYSDATE);
 EXCEPTION
@@ -341,7 +385,7 @@ END;
 /
 
 PROMPT
-PROMPT Prueba 3.6: liquidar julio de 2025 con una comision de 150%
+PROMPT Prueba 3.9: liquidar julio de 2025 con una comision de 150%
 BEGIN
   pkg_turismouq.sp_liquidar_mes(p_periodo => DATE '2025-07-01', p_porcentaje => 150);
 EXCEPTION
@@ -772,3 +816,9 @@ EXCEPTION
   WHEN OTHERS THEN DBMS_OUTPUT.PUT_LINE('   ' || SQLERRM);
 END;
 /
+
+PROMPT
+PROMPT Prueba 8.8: al reabrir el mes tambien se borra su detalle (ON DELETE CASCADE)
+SELECT (SELECT COUNT(*) FROM liquidacion_mensual WHERE periodo = DATE '2025-06-01') AS totales,
+       (SELECT COUNT(*) FROM liquidacion_detalle WHERE periodo = DATE '2025-06-01') AS reservas_detalle
+FROM   dual;

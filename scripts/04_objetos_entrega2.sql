@@ -15,7 +15,8 @@ BEGIN
   END LOOP;
 
   FOR t IN (SELECT table_name FROM user_tables
-            WHERE  table_name IN ('AUDITORIA_TARIFA', 'LIQUIDACION_MENSUAL')) LOOP
+            WHERE  table_name IN ('AUDITORIA_TARIFA', 'LIQUIDACION_DETALLE',
+                                  'LIQUIDACION_MENSUAL')) LOOP
     EXECUTE IMMEDIATE 'DROP TABLE ' || t.table_name || ' CASCADE CONSTRAINTS PURGE';
   END LOOP;
 
@@ -125,6 +126,35 @@ CREATE TABLE liquidacion_mensual (
                                                   - valor_comision)
 );
 
+-- Detalle de la liquidacion: una fila por cada reserva que entro en la
+-- liquidacion de un alojamiento, con lo que se cobro de alojamiento y de
+-- servicios. Es lo que permite ver la liquidacion reserva por reserva y no
+-- solo el total. Su llave foranea hacia LIQUIDACION_MENSUAL tiene ON DELETE
+-- CASCADE: al reabrir un mes se borra el total y tambien su detalle.
+-- Va en el tablespace del historico porque crece con cada mes liquidado.
+CREATE TABLE liquidacion_detalle (
+  id_alojamiento     NUMBER(6),
+  periodo            DATE,
+  id_reserva         NUMBER(10),
+  id_cliente         NUMBER(8)     CONSTRAINT nn_ldet_cliente  NOT NULL,
+  fecha_checkin      DATE          CONSTRAINT nn_ldet_checkin  NOT NULL,
+  fecha_checkout     DATE          CONSTRAINT nn_ldet_checkout NOT NULL,
+  noches             NUMBER(4)     CONSTRAINT nn_ldet_noches   NOT NULL,
+  valor_alojamiento  NUMBER(14,2)  CONSTRAINT nn_ldet_aloj     NOT NULL,
+  valor_servicios    NUMBER(14,2)  CONSTRAINT nn_ldet_serv     NOT NULL,
+  valor_total        NUMBER(14,2)  CONSTRAINT nn_ldet_total    NOT NULL,
+  CONSTRAINT pk_liquidacion_detalle PRIMARY KEY (id_alojamiento, periodo, id_reserva),
+  CONSTRAINT fk_ldet_liquidacion FOREIGN KEY (id_alojamiento, periodo)
+             REFERENCES liquidacion_mensual (id_alojamiento, periodo) ON DELETE CASCADE,
+  CONSTRAINT fk_ldet_reserva FOREIGN KEY (id_reserva) REFERENCES reserva (id_reserva),
+  CONSTRAINT fk_ldet_cliente FOREIGN KEY (id_cliente) REFERENCES cliente (id_cliente),
+  CONSTRAINT ck_ldet_valores CHECK (noches > 0 AND valor_alojamiento >= 0
+                                    AND valor_servicios >= 0),
+  CONSTRAINT ck_ldet_cuadre  CHECK (valor_total = valor_alojamiento + valor_servicios)
+) TABLESPACE ts_historico_reservas;
+
+CREATE INDEX ix_ldet_reserva ON liquidacion_detalle (id_reserva) TABLESPACE ts_historico_reservas;
+
 SET LINESIZE 120;
 SET PAGESIZE 50;
 SET TAB OFF;
@@ -147,7 +177,7 @@ SELECT t.table_name,
              WHERE k.table_name = t.table_name) || ' restricciones'
 FROM   user_tables t
 JOIN   user_tab_columns c ON c.table_name = t.table_name
-WHERE  t.table_name IN ('AUDITORIA_TARIFA', 'LIQUIDACION_MENSUAL')
+WHERE  t.table_name IN ('AUDITORIA_TARIFA', 'LIQUIDACION_MENSUAL', 'LIQUIDACION_DETALLE')
 GROUP  BY t.table_name
 ORDER  BY 2, 1;
 

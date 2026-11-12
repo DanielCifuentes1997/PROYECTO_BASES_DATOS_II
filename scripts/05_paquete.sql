@@ -51,6 +51,13 @@ CREATE OR REPLACE PACKAGE pkg_turismouq IS
     p_porcentaje  IN NUMBER DEFAULT 12
   );
 
+  -- Muestra la liquidacion de un mes alojamiento por alojamiento, con cada
+  -- reserva que entro en ella. Si no se indica alojamiento, muestra todos.
+  PROCEDURE sp_reporte_liquidacion (
+    p_periodo         IN DATE,
+    p_id_alojamiento  IN alojamiento.id_alojamiento%TYPE DEFAULT NULL
+  );
+
   -- Registra un cliente nuevo y devuelve su numero en p_id_cliente
   PROCEDURE sp_registrar_cliente (
     p_nombre      IN  cliente.nombre%TYPE,
@@ -346,7 +353,8 @@ CREATE OR REPLACE PACKAGE BODY pkg_turismouq IS
   -- sp_liquidar_mes
   -- Se liquidan las estadias FINALIZADAS cuya fecha de salida cae en el mes.
   -- Por cada alojamiento: ingresos de alojamiento y de servicios, comision de
-  -- la plataforma y valor a pagar. O se liquida todo el mes o no se liquida nada.
+  -- la plataforma y valor a pagar, y el detalle de cada una de sus reservas.
+  -- O se liquida todo el mes o no se liquida nada.
   PROCEDURE sp_liquidar_mes (
     p_periodo     IN DATE,
     p_porcentaje  IN NUMBER DEFAULT 12
@@ -368,7 +376,34 @@ CREATE OR REPLACE PACKAGE BODY pkg_turismouq IS
       GROUP  BY h.id_alojamiento
       ORDER  BY h.id_alojamiento;
 
+    -- Segundo cursor explicito con parametros: las reservas de UN alojamiento
+    -- que entran en la liquidacion, cada una con lo que pago de alojamiento
+    -- y de servicios. Se abre una vez por cada alojamiento del cursor anterior.
+    CURSOR c_reservas (p_aloj NUMBER, p_desde DATE, p_hasta DATE) IS
+      SELECT r.id_reserva,
+             r.id_cliente,
+             r.fecha_checkin,
+             r.fecha_checkout,
+             SUM(rh.noches)                            AS noches,
+             SUM(rh.noches * rh.valor_noche_aplicado)  AS valor_alojamiento,
+             NVL((SELECT SUM(rs.valor_total)
+                  FROM   reserva_servicio rs
+                  JOIN   servicio s ON s.id_servicio = rs.id_servicio
+                  WHERE  rs.id_reserva     = r.id_reserva
+                    AND  s.id_alojamiento  = p_aloj), 0) AS valor_servicios
+      FROM   reserva r
+      JOIN   reserva_habitacion rh ON rh.id_reserva   = r.id_reserva
+      JOIN   habitacion h          ON h.id_habitacion = rh.id_habitacion
+      WHERE  h.id_alojamiento = p_aloj
+        AND  r.estado = 'FINALIZADA'
+        AND  r.fecha_checkout >= p_desde
+        AND  r.fecha_checkout <  p_hasta
+      GROUP  BY r.id_reserva, r.id_cliente, r.fecha_checkin, r.fecha_checkout
+      ORDER  BY r.fecha_checkout, r.id_reserva;
+
     r_aloj        c_alojamientos%ROWTYPE;
+    r_reserva     c_reservas%ROWTYPE;
+    v_detalles    NUMBER := 0;
     v_desde       DATE := TRUNC(p_periodo, 'MM');
     v_hasta       DATE := ADD_MONTHS(TRUNC(p_periodo, 'MM'), 1);
     v_existe      NUMBER;
@@ -430,6 +465,23 @@ CREATE OR REPLACE PACKAGE BODY pkg_turismouq IS
               r_aloj.ingreso_alojamiento, v_servicios,
               p_porcentaje, v_comision, v_pagar);
 
+      -- Detalle: cada reserva del alojamiento, una por una
+      OPEN c_reservas(r_aloj.id_alojamiento, v_desde, v_hasta);
+      LOOP
+        FETCH c_reservas INTO r_reserva;
+        EXIT WHEN c_reservas%NOTFOUND;
+
+        INSERT INTO liquidacion_detalle (id_alojamiento, periodo, id_reserva, id_cliente,
+                                         fecha_checkin, fecha_checkout, noches,
+                                         valor_alojamiento, valor_servicios, valor_total)
+        VALUES (r_aloj.id_alojamiento, v_desde, r_reserva.id_reserva, r_reserva.id_cliente,
+                r_reserva.fecha_checkin, r_reserva.fecha_checkout, r_reserva.noches,
+                r_reserva.valor_alojamiento, r_reserva.valor_servicios,
+                r_reserva.valor_alojamiento + r_reserva.valor_servicios);
+      END LOOP;
+      v_detalles := v_detalles + c_reservas%ROWCOUNT;
+      CLOSE c_reservas;
+
       v_total := v_total + v_pagar;
     END LOOP;
     v_liquidados := c_alojamientos%ROWCOUNT;
@@ -437,17 +489,117 @@ CREATE OR REPLACE PACKAGE BODY pkg_turismouq IS
 
     COMMIT;
     DBMS_OUTPUT.PUT_LINE('Mes ' || TO_CHAR(v_desde, 'MM/YYYY') || ' liquidado: '
-                         || v_liquidados || ' alojamientos, total a pagar ' || v_total);
+                         || v_liquidados || ' alojamientos, ' || v_detalles
+                         || ' reservas, total a pagar ' || v_total);
 
   EXCEPTION
     WHEN OTHERS THEN
-      -- Cierra el cursor si quedo abierto, deshace todo y devuelve el error
+      -- Cierra los cursores que hayan quedado abiertos, deshace todo y
+      -- devuelve el error
+      IF c_reservas%ISOPEN THEN
+        CLOSE c_reservas;
+      END IF;
       IF c_alojamientos%ISOPEN THEN
         CLOSE c_alojamientos;
       END IF;
       ROLLBACK;
       RAISE;
   END sp_liquidar_mes;
+
+
+  -- sp_reporte_liquidacion
+  -- Solo consulta: recorre los alojamientos liquidados del mes y, por cada
+  -- uno, sus reservas. Imprime cada reserva con su valor y al final el
+  -- subtotal, la comision y lo que se le paga al alojamiento.
+  PROCEDURE sp_reporte_liquidacion (
+    p_periodo         IN DATE,
+    p_id_alojamiento  IN alojamiento.id_alojamiento%TYPE DEFAULT NULL
+  )
+  IS
+    CURSOR c_liquidados (p_per DATE, p_aloj NUMBER) IS
+      SELECT l.id_alojamiento, a.nombre AS alojamiento, m.nombre AS municipio,
+             l.reservas, l.ingreso_alojamiento, l.ingreso_servicios,
+             l.porcentaje_comision, l.valor_comision, l.valor_a_pagar
+      FROM   liquidacion_mensual l
+      JOIN   alojamiento a ON a.id_alojamiento = l.id_alojamiento
+      JOIN   municipio m   ON m.id_municipio   = a.id_municipio
+      WHERE  l.periodo = p_per
+        AND  (p_aloj IS NULL OR l.id_alojamiento = p_aloj)
+      ORDER  BY a.nombre;
+
+    CURSOR c_facturas (p_aloj NUMBER, p_per DATE) IS
+      SELECT d.id_reserva, c.nombre AS cliente, d.fecha_checkin, d.fecha_checkout,
+             d.noches, d.valor_alojamiento, d.valor_servicios, d.valor_total
+      FROM   liquidacion_detalle d
+      JOIN   cliente c ON c.id_cliente = d.id_cliente
+      WHERE  d.id_alojamiento = p_aloj
+        AND  d.periodo        = p_per
+      ORDER  BY d.fecha_checkout, d.id_reserva;
+
+    r_liq      c_liquidados%ROWTYPE;
+    r_fac      c_facturas%ROWTYPE;
+    v_periodo  DATE := TRUNC(p_periodo, 'MM');
+
+    FUNCTION fn_dinero (p_valor NUMBER) RETURN VARCHAR2 IS
+    BEGIN
+      RETURN LPAD(TO_CHAR(p_valor, 'FM999G999G999'), 12);
+    END fn_dinero;
+  BEGIN
+    OPEN c_liquidados(v_periodo, p_id_alojamiento);
+    LOOP
+      FETCH c_liquidados INTO r_liq;
+      EXIT WHEN c_liquidados%NOTFOUND;
+
+      DBMS_OUTPUT.PUT_LINE(RPAD('=', 92, '='));
+      DBMS_OUTPUT.PUT_LINE(r_liq.alojamiento || ' (' || r_liq.municipio || ') - liquidacion de '
+                           || TO_CHAR(v_periodo, 'MM/YYYY') || ' - ' || r_liq.reservas || ' reservas');
+      DBMS_OUTPUT.PUT_LINE(RPAD('Reserva', 9) || RPAD('Cliente', 22) || RPAD('Entrada', 11)
+                           || RPAD('Salida', 11) || LPAD('Noches', 6)
+                           || LPAD('Alojamiento', 12) || LPAD('Servicios', 12) || LPAD('Total', 12));
+
+      OPEN c_facturas(r_liq.id_alojamiento, v_periodo);
+      LOOP
+        FETCH c_facturas INTO r_fac;
+        EXIT WHEN c_facturas%NOTFOUND;
+        DBMS_OUTPUT.PUT_LINE(RPAD(r_fac.id_reserva, 9) || RPAD(SUBSTR(r_fac.cliente, 1, 21), 22)
+                             || RPAD(TO_CHAR(r_fac.fecha_checkin, 'DD/MM/YYYY'), 11)
+                             || RPAD(TO_CHAR(r_fac.fecha_checkout, 'DD/MM/YYYY'), 11)
+                             || LPAD(r_fac.noches, 6)
+                             || fn_dinero(r_fac.valor_alojamiento)
+                             || fn_dinero(r_fac.valor_servicios)
+                             || fn_dinero(r_fac.valor_total));
+      END LOOP;
+      CLOSE c_facturas;
+
+      DBMS_OUTPUT.PUT_LINE(RPAD('Subtotal', 59, '.')
+                           || fn_dinero(r_liq.ingreso_alojamiento)
+                           || fn_dinero(r_liq.ingreso_servicios)
+                           || fn_dinero(r_liq.ingreso_alojamiento + r_liq.ingreso_servicios));
+      DBMS_OUTPUT.PUT_LINE(RPAD('Comision de TurismoUQ (' || r_liq.porcentaje_comision || '%)', 83, '.')
+                           || fn_dinero(r_liq.valor_comision));
+      DBMS_OUTPUT.PUT_LINE(RPAD('A pagar al alojamiento', 83, '.')
+                           || fn_dinero(r_liq.valor_a_pagar));
+    END LOOP;
+
+    IF c_liquidados%ROWCOUNT = 0 THEN
+      CLOSE c_liquidados;
+      RAISE_APPLICATION_ERROR(c_err_liquidacion,
+        'El mes ' || TO_CHAR(v_periodo, 'MM/YYYY') || ' no esta liquidado'
+        || CASE WHEN p_id_alojamiento IS NOT NULL
+                THEN ' para el alojamiento ' || p_id_alojamiento END || '.');
+    END IF;
+    CLOSE c_liquidados;
+
+  EXCEPTION
+    WHEN OTHERS THEN
+      IF c_facturas%ISOPEN THEN
+        CLOSE c_facturas;
+      END IF;
+      IF c_liquidados%ISOPEN THEN
+        CLOSE c_liquidados;
+      END IF;
+      RAISE;
+  END sp_reporte_liquidacion;
 
 
   -- sp_registrar_cliente
