@@ -19,6 +19,7 @@ CREATE OR REPLACE PACKAGE pkg_turismouq IS
   c_err_servicio       CONSTANT PLS_INTEGER := -20010;  -- servicio inexistente o de otro alojamiento
   c_err_dato_invalido  CONSTANT PLS_INTEGER := -20011;  -- valor fuera de rango o no permitido
   c_err_temporada_iniciada CONSTANT PLS_INTEGER := -20012;  -- tarifa de una temporada que ya empezo
+  c_err_otra_sede      CONSTANT PLS_INTEGER := -20013;  -- operacion sobre un alojamiento que no es el del usuario (Entrega 3)
 
   -- Valor de una estadia cobrando cada noche con la tarifa de su temporada
   FUNCTION fn_valor_estadia (
