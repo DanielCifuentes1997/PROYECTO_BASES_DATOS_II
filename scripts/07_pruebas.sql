@@ -83,6 +83,10 @@ FROM   dual;
 -- Prueba 2: sp_crear_reserva
 -- Se usan fechas de 2027, donde no hay reservas cargadas. Primero se borran
 -- las reservas de prueba que haya dejado una ejecucion anterior de este script.
+DELETE FROM pago
+WHERE  id_reserva IN (SELECT id_reserva FROM reserva WHERE fecha_checkin >= DATE '2027-01-01');
+DELETE FROM reserva_servicio
+WHERE  id_reserva IN (SELECT id_reserva FROM reserva WHERE fecha_checkin >= DATE '2027-01-01');
 DELETE FROM reserva_habitacion
 WHERE  id_reserva IN (SELECT id_reserva FROM reserva WHERE fecha_checkin >= DATE '2027-01-01');
 DELETE FROM reserva
