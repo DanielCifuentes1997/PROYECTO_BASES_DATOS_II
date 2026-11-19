@@ -537,6 +537,22 @@ CREATE OR REPLACE PACKAGE pkg_portal IS
     p_num_huespedes  IN  reserva.num_huespedes%TYPE,
     p_id_reserva     OUT reserva.id_reserva%TYPE
   );
+
+  -- Reserva y pago en una sola transaccion (pkg_transacciones). Devuelve lo
+  -- que se cobro y si el servicio de bienvenida quedo (1) o se deshizo con el
+  -- ROLLBACK TO del savepoint (0).
+  PROCEDURE sp_reservar_y_pagar (
+    p_id_cliente         IN  cliente.id_cliente%TYPE,
+    p_id_habitacion      IN  habitacion.id_habitacion%TYPE,
+    p_fecha_in           IN  reserva.fecha_checkin%TYPE,
+    p_fecha_out          IN  reserva.fecha_checkout%TYPE,
+    p_num_huespedes      IN  reserva.num_huespedes%TYPE,
+    p_metodo_pago        IN  pago.metodo_pago%TYPE,
+    p_id_servicio        IN  servicio.id_servicio%TYPE,
+    p_id_reserva         OUT reserva.id_reserva%TYPE,
+    p_valor_pagado       OUT pago.valor%TYPE,
+    p_servicio_agregado  OUT NUMBER
+  );
 END pkg_portal;
 /
 SHOW ERRORS PACKAGE pkg_portal
@@ -602,6 +618,36 @@ CREATE OR REPLACE PACKAGE BODY pkg_portal IS
     pkg_turismouq.sp_crear_reserva(p_id_cliente, p_id_habitacion, p_fecha_in, p_fecha_out,
                                    p_num_huespedes, p_id_reserva);
   END sp_crear_reserva;
+
+  PROCEDURE sp_reservar_y_pagar (
+    p_id_cliente         IN  cliente.id_cliente%TYPE,
+    p_id_habitacion      IN  habitacion.id_habitacion%TYPE,
+    p_fecha_in           IN  reserva.fecha_checkin%TYPE,
+    p_fecha_out          IN  reserva.fecha_checkout%TYPE,
+    p_num_huespedes      IN  reserva.num_huespedes%TYPE,
+    p_metodo_pago        IN  pago.metodo_pago%TYPE,
+    p_id_servicio        IN  servicio.id_servicio%TYPE,
+    p_id_reserva         OUT reserva.id_reserva%TYPE,
+    p_valor_pagado       OUT pago.valor%TYPE,
+    p_servicio_agregado  OUT NUMBER
+  ) IS
+  BEGIN
+    pkg_transacciones.sp_reservar_y_pagar(
+      p_id_cliente    => p_id_cliente,
+      p_id_habitacion => p_id_habitacion,
+      p_fecha_in      => p_fecha_in,
+      p_fecha_out     => p_fecha_out,
+      p_num_huespedes => p_num_huespedes,
+      p_metodo_pago   => p_metodo_pago,
+      p_id_servicio   => p_id_servicio,
+      p_id_reserva    => p_id_reserva);
+
+    SELECT valor INTO p_valor_pagado FROM pago WHERE id_reserva = p_id_reserva;
+
+    SELECT COUNT(*) INTO p_servicio_agregado
+    FROM   reserva_servicio
+    WHERE  id_reserva = p_id_reserva;
+  END sp_reservar_y_pagar;
 
 END pkg_portal;
 /

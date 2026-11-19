@@ -265,11 +265,33 @@
             </div>
           </div>
 
+          <!-- Paso 4 -->
+          <div class="space-y-2">
+            <div class="flex items-center gap-2 text-sm font-bold text-white"><span class="paso-num">4</span> Pago</div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label class="block text-xs text-emerald-200/80 mb-1">Método de pago</label>
+                <select id="res-select-pago" class="w-full rounded-xl bg-[#06110c] border border-emerald-500/30 px-3 py-2.5 text-xs text-white focus:border-amber-400 focus:outline-none">
+                  <option value="TARJETA_CREDITO">Tarjeta de crédito</option>
+                  <option value="TARJETA_DEBITO">Tarjeta débito</option>
+                  <option value="PSE">PSE</option>
+                  <option value="TRANSFERENCIA">Transferencia</option>
+                  <option value="EFECTIVO">Efectivo</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-xs text-emerald-200/80 mb-1">Servicio de bienvenida (opcional)</label>
+                <select id="res-select-servicio" class="w-full rounded-xl bg-[#06110c] border border-emerald-500/30 px-3 py-2.5 text-xs text-white focus:border-amber-400 focus:outline-none"></select>
+              </div>
+            </div>
+            <p class="text-[11px] text-emerald-200/60">Se cobra el valor total de la estadía junto con el servicio que elijas. La reserva y el pago se guardan juntos: si el pago no pasa, la reserva tampoco queda.</p>
+          </div>
+
           <div id="res-alerta-box" class="hidden"></div>
 
           <div class="space-y-1.5">
             <button id="btn-confirmar" onclick="confirmarReserva()" disabled class="w-full py-3.5 px-6 rounded-2xl bg-gradient-to-r from-amber-500 via-amber-400 to-emerald-400 hover:brightness-110 text-slate-950 font-extrabold text-sm flex items-center justify-center gap-2 shadow-xl shadow-amber-500/20 transition">
-              <i data-lucide="check-circle-2" class="w-4 h-4"></i><span>Confirmar reserva</span>
+              <i data-lucide="credit-card" class="w-4 h-4"></i><span>Reservar y pagar</span>
             </button>
             <p id="btn-confirmar-ayuda" class="text-center text-xs text-amber-200/70"></p>
           </div>
@@ -487,6 +509,7 @@
         <button data-tab="ocupacion" onclick="abrirTab('gerente','ocupacion')" class="mpio-chip px-4 py-2 rounded-full text-xs font-semibold border border-emerald-500/25 bg-[#08150f] text-emerald-100 flex items-center gap-1.5"><i data-lucide="grid-3x3" class="w-3.5 h-3.5"></i> Ocupación</button>
         <button data-tab="ranking" onclick="abrirTab('gerente','ranking')" class="mpio-chip px-4 py-2 rounded-full text-xs font-semibold border border-emerald-500/25 bg-[#08150f] text-emerald-100 flex items-center gap-1.5"><i data-lucide="trophy" class="w-3.5 h-3.5"></i> Mejores por municipio</button>
         <button data-tab="oportunidades" onclick="abrirTab('gerente','oportunidades')" class="mpio-chip px-4 py-2 rounded-full text-xs font-semibold border border-emerald-500/25 bg-[#08150f] text-emerald-100 flex items-center gap-1.5"><i data-lucide="flame" class="w-3.5 h-3.5"></i> Oportunidades</button>
+        <button data-tab="temporada" onclick="abrirTab('gerente','temporada')" class="mpio-chip px-4 py-2 rounded-full text-xs font-semibold border border-emerald-500/25 bg-[#08150f] text-emerald-100 flex items-center gap-1.5"><i data-lucide="sun" class="w-3.5 h-3.5"></i> Temporada alta y clientes</button>
         <button data-tab="liquidacion" onclick="abrirTab('gerente','liquidacion')" class="mpio-chip px-4 py-2 rounded-full text-xs font-semibold border border-emerald-500/25 bg-[#08150f] text-emerald-100 flex items-center gap-1.5"><i data-lucide="banknote" class="w-3.5 h-3.5"></i> Liquidación mensual</button>
       </div>
 
@@ -575,6 +598,53 @@
             </thead>
             <tbody id="ger-tabla-promocion" class="divide-y divide-emerald-500/10 font-mono"></tbody>
           </table>
+        </div>
+      </div>
+
+      <!-- Temporada alta y clientes -->
+      <div data-panel="gerente-temporada" class="hidden space-y-6">
+        <div class="luxury-card rounded-3xl p-6 space-y-4">
+          <div>
+            <h3 class="text-base font-bold text-white">Habitación con más reservas en temporada alta</h3>
+            <p class="text-xs text-emerald-100/60">Cuenta las reservas con al menos una noche en temporada alta, desde que empezó la plataforma. Si dos habitaciones empatan, gana la que vendió más noches en temporada alta.</p>
+          </div>
+          <div id="ger-alta-ganadora"></div>
+          <div class="overflow-x-auto rounded-2xl border border-emerald-500/15">
+            <table class="w-full text-left border-collapse text-xs">
+              <thead class="bg-[#08150f] text-emerald-200/75 uppercase font-mono border-b border-emerald-500/20">
+                <tr>
+                  <th class="py-2.5 px-3">Puesto</th>
+                  <th class="py-2.5 px-3">Alojamiento</th>
+                  <th class="py-2.5 px-3">Habitación</th>
+                  <th class="py-2.5 px-3 text-right">Reservas</th>
+                  <th class="py-2.5 px-3 text-right">Noches en alta</th>
+                  <th class="py-2.5 px-3 text-right text-amber-300">Ingresos en alta</th>
+                </tr>
+              </thead>
+              <tbody id="ger-tabla-alta" class="divide-y divide-emerald-500/10 font-mono"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="luxury-card rounded-3xl p-6 space-y-4">
+          <div>
+            <h3 class="text-base font-bold text-white">El cliente con más reservas en cada municipio</h3>
+            <p class="text-xs text-emerald-100/60">Si dos clientes empatan en reservas en un municipio, gana el que más gastó allí.</p>
+          </div>
+          <div class="overflow-x-auto rounded-2xl border border-emerald-500/15">
+            <table class="w-full text-left border-collapse text-xs">
+              <thead class="bg-[#08150f] text-emerald-200/75 uppercase font-mono border-b border-emerald-500/20">
+                <tr>
+                  <th class="py-2.5 px-3">Municipio</th>
+                  <th class="py-2.5 px-3">Cliente</th>
+                  <th class="py-2.5 px-3">Documento</th>
+                  <th class="py-2.5 px-3 text-right">Reservas</th>
+                  <th class="py-2.5 px-3 text-right">Noches</th>
+                  <th class="py-2.5 px-3 text-right text-amber-300">Gastado</th>
+                </tr>
+              </thead>
+              <tbody id="ger-tabla-clientes-municipio" class="divide-y divide-emerald-500/10 font-mono"></tbody>
+            </table>
+          </div>
         </div>
       </div>
 
@@ -1114,6 +1184,9 @@
       const primeraLibre = data.habitaciones.find(h => h.estado === 'DISPONIBLE');
       if (primeraLibre) selHab.value = primeraLibre.id_habitacion;
 
+      document.getElementById('res-select-servicio').innerHTML = '<option value="">Sin servicio</option>' +
+        data.servicios.map(s => `<option value="${s.id_servicio}">${s.nombre} · ${fmtCOP(s.valor)}</option>`).join('');
+
       document.getElementById('res-servicios-titulo').textContent = `Experiencias de este alojamiento (${data.servicios.length})`;
       document.getElementById('res-servicios-chips').innerHTML = data.servicios.map(s => `
         <span class="px-2.5 py-1 rounded-lg bg-[#06110c] border border-emerald-500/20 text-[11px] text-emerald-200">✦ ${s.nombre} <strong class="font-mono text-amber-300">${fmtCOP(s.valor)}</strong></span>`).join('');
@@ -1219,38 +1292,65 @@
       await buscarCliente();
     }
 
+    const NOMBRES_PAGO = { TARJETA_CREDITO: 'tarjeta de crédito', TARJETA_DEBITO: 'tarjeta débito',
+                           PSE: 'PSE', TRANSFERENCIA: 'transferencia', EFECTIVO: 'efectivo' };
+
     async function confirmarReserva() {
       const payload = {
         id_cliente: STATE.clienteReserva.id_cliente,
         id_habitacion: Number(document.getElementById('res-select-habitacion').value),
         fecha_in: document.getElementById('res-input-in').value,
         fecha_out: document.getElementById('res-input-out').value,
-        num_huespedes: Number(document.getElementById('res-input-huespedes').value)
+        num_huespedes: Number(document.getElementById('res-input-huespedes').value),
+        metodo_pago: document.getElementById('res-select-pago').value,
+        id_servicio: Number(document.getElementById('res-select-servicio').value) || null
       };
-      const data = await api('/api/reservas/crear', payload);
+      const btn = document.getElementById('btn-confirmar');
+      const textoBtn = btn.querySelector('span');
+      btn.disabled = true;
+      textoBtn.textContent = 'Procesando el pago...';
+      let data;
+      try {
+        data = await api('/api/reservas/crear', payload);
+      } finally {
+        textoBtn.textContent = 'Reservar y pagar';
+        btn.disabled = false;
+      }
       const alerta = document.getElementById('res-alerta-box');
       alerta.classList.remove('hidden');
       if (!data.ok) {
         alerta.innerHTML = `
           <div class="rounded-2xl p-4 bg-rose-500/15 border border-rose-500/45 text-xs text-rose-100 flex items-start gap-2.5">
             <i data-lucide="shield-alert" class="w-5 h-5 text-rose-400 shrink-0 mt-0.5"></i>
-            <div><div class="font-bold text-rose-300">No se pudo reservar</div><div class="mt-0.5">${data.mensaje}</div></div>
+            <div><div class="font-bold text-rose-300">No se pudo reservar</div><div class="mt-0.5">${data.mensaje}</div><div class="mt-1 text-rose-200/70">No se hizo ningún cobro y no quedó nada guardado.</div></div>
           </div>`;
+        const aviso = alerta.innerHTML;
+        await cotizarEstadiaActual();
+        alerta.innerHTML = aviso;
+        alerta.classList.remove('hidden');
         lucide.createIcons();
         return;
       }
       const r = data.reserva;
       alerta.innerHTML = `
         <div class="rounded-2xl p-4 bg-emerald-500/15 border border-emerald-400/50 text-xs text-emerald-50 space-y-1.5">
-          <div class="font-extrabold text-emerald-300 text-sm flex items-center gap-2"><i data-lucide="award" class="w-4 h-4 text-amber-400"></i> ¡Reserva #${r.id_reserva} confirmada!</div>
+          <div class="font-extrabold text-emerald-300 text-sm flex items-center gap-2"><i data-lucide="award" class="w-4 h-4 text-amber-400"></i> ¡Reserva #${r.id_reserva} confirmada y pagada!</div>
           <div><strong>Huésped:</strong> ${STATE.clienteReserva.nombre}</div>
           <div><strong>Dónde:</strong> ${r.alojamiento} (${r.municipio}) · Habitación ${r.hab_numero}</div>
           <div><strong>Fechas:</strong> ${fmtFecha(r.fecha_checkin)} → ${fmtFecha(r.fecha_checkout)} · ${r.num_huespedes} huésped${r.num_huespedes > 1 ? 'es' : ''}</div>
-          <div><strong>Valor:</strong> <span class="font-mono font-bold text-amber-300">${fmtCOP(r.valor_total)}</span></div>
+          <div><strong>Pagado:</strong> <span class="font-mono font-bold text-amber-300">${fmtCOP(r.valor_pagado)}</span> con ${NOMBRES_PAGO[r.metodo_pago]}</div>
+          ${r.pidio_servicio ? (r.servicio_agregado
+            ? `<div><strong>Servicio de bienvenida:</strong> incluido en el pago.</div>`
+            : `<div class="text-amber-200"><strong>Servicio de bienvenida:</strong> no se pudo agregar; la reserva y el pago quedaron sin él.</div>`) : ''}
         </div>`;
       showToast(`Reserva #${r.id_reserva} registrada para ${STATE.clienteReserva.nombre}.`);
       lucide.createIcons();
+      // Refresca la cotizacion (ahora sale ocupada) sin esconder la confirmacion
+      const confirmacion = alerta.innerHTML;
       await cotizarEstadiaActual();
+      alerta.innerHTML = confirmacion;
+      alerta.classList.remove('hidden');
+      lucide.createIcons();
     }
 
     // =====================================================================
@@ -1571,6 +1671,45 @@
       renderOcupacionGerente();
       renderRankingGerente();
       renderPromocionGerente();
+      renderTemporadaGerente();
+    }
+
+    function renderTemporadaGerente() {
+      const alta = STATE.gerente.habitacion_alta;
+      const g = alta[0];
+      document.getElementById('ger-alta-ganadora').innerHTML = g ? `
+        <div class="rounded-2xl p-4 bg-amber-500/10 border border-amber-400/40 flex flex-wrap items-center justify-between gap-3">
+          <div class="flex items-center gap-3">
+            <i data-lucide="trophy" class="w-6 h-6 text-amber-400"></i>
+            <div>
+              <div class="text-sm font-extrabold text-white">${g.alojamiento} · Habitación ${g.habitacion}</div>
+              <div class="text-xs text-emerald-200/70">${g.municipio} · ${g.tipo.toLowerCase()}</div>
+            </div>
+          </div>
+          <div class="text-right">
+            <div class="text-2xl font-extrabold font-mono text-amber-300">${fmtNum(g.reservas)} reservas</div>
+            <div class="text-xs text-emerald-200/70">${fmtNum(g.noches_alta)} noches en temporada alta</div>
+          </div>
+        </div>` : '';
+      document.getElementById('ger-tabla-alta').innerHTML = alta.map(r => `
+        <tr class="hover:bg-emerald-500/5 ${r.puesto === 1 ? 'bg-amber-500/5' : ''}">
+          <td class="py-2.5 px-3 font-bold ${r.puesto === 1 ? 'text-amber-300' : 'text-emerald-200/80'}">#${r.puesto}</td>
+          <td class="py-2.5 px-3 font-bold text-white font-sans">${r.alojamiento}<div class="text-[11px] text-emerald-200/60 font-normal">${r.municipio}</div></td>
+          <td class="py-2.5 px-3 font-sans">${r.habitacion} <span class="text-[11px] text-emerald-200/60">${r.tipo.toLowerCase()}</span></td>
+          <td class="py-2.5 px-3 text-right font-bold">${fmtNum(r.reservas)}</td>
+          <td class="py-2.5 px-3 text-right">${fmtNum(r.noches_alta)}</td>
+          <td class="py-2.5 px-3 text-right text-amber-300">${fmtCOP(r.ingresos_alta)}</td>
+        </tr>`).join('');
+      document.getElementById('ger-tabla-clientes-municipio').innerHTML = STATE.gerente.clientes_municipio.map(r => `
+        <tr class="hover:bg-emerald-500/5">
+          <td class="py-2.5 px-3 text-emerald-200/80 font-sans">${r.municipio}</td>
+          <td class="py-2.5 px-3 font-bold text-white font-sans">${r.cliente}</td>
+          <td class="py-2.5 px-3">${r.documento}</td>
+          <td class="py-2.5 px-3 text-right font-bold">${fmtNum(r.reservas)}</td>
+          <td class="py-2.5 px-3 text-right">${fmtNum(r.noches)}</td>
+          <td class="py-2.5 px-3 text-right text-amber-300">${fmtCOP(r.gastado)}</td>
+        </tr>`).join('');
+      lucide.createIcons();
     }
 
     function renderGraficaGerente() {

@@ -210,6 +210,8 @@ class CrearReservaRequest(BaseModel):
     fecha_in: str
     fecha_out: str
     num_huespedes: int
+    metodo_pago: str
+    id_servicio: Optional[int] = None
 
 
 class NuevoClienteRequest(BaseModel):
@@ -410,37 +412,48 @@ def cotizar_estadia(req: CotizarRequest):
 
 @app.post("/api/reservas/crear")
 def crear_reserva(req: CrearReservaRequest):
+    # Reserva y pago van en una sola transaccion de la base (pkg_transacciones):
+    # si algo falla no queda guardada ni la reserva ni el pago
     with get_pool_portal().acquire() as conn:
         with conn.cursor() as cur:
             try:
                 id_reserva = cur.var(int)
+                valor_pagado = cur.var(float)
+                servicio_agregado = cur.var(int)
                 cur.execute("""
                     BEGIN
-                      pkg_portal.sp_crear_reserva(
-                        p_id_cliente    => :cli,
-                        p_id_habitacion => :hab,
-                        p_fecha_in      => TO_DATE(:fin, 'YYYY-MM-DD'),
-                        p_fecha_out     => TO_DATE(:fout, 'YYYY-MM-DD'),
-                        p_num_huespedes => :hues,
-                        p_id_reserva    => :id);
+                      pkg_portal.sp_reservar_y_pagar(
+                        p_id_cliente        => :cli,
+                        p_id_habitacion     => :hab,
+                        p_fecha_in          => TO_DATE(:fin, 'YYYY-MM-DD'),
+                        p_fecha_out         => TO_DATE(:fout, 'YYYY-MM-DD'),
+                        p_num_huespedes     => :hues,
+                        p_metodo_pago       => :metodo,
+                        p_id_servicio       => :serv,
+                        p_id_reserva        => :id,
+                        p_valor_pagado      => :pagado,
+                        p_servicio_agregado => :con_servicio);
                     END;
                 """, {"cli": req.id_cliente, "hab": req.id_habitacion, "fin": req.fecha_in,
-                      "fout": req.fecha_out, "hues": req.num_huespedes, "id": id_reserva})
+                      "fout": req.fecha_out, "hues": req.num_huespedes, "metodo": req.metodo_pago,
+                      "serv": req.id_servicio, "id": id_reserva, "pagado": valor_pagado,
+                      "con_servicio": servicio_agregado})
             except oracledb.Error as e:
                 return {"ok": False, "mensaje": mensaje_oracle(e)}
 
     # El portal no puede leer la tabla de reservas: la confirmacion se arma con
-    # lo que se pidio y con el catalogo
+    # lo que se pidio, con el catalogo y con lo que devolvio el procedimiento
     detalle = portal_consultar("""
-        SELECT h.numero AS hab_numero, a.nombre AS alojamiento, a.municipio,
-               pkg_portal.fn_valor_estadia(h.id_habitacion, TO_DATE(:fin, 'YYYY-MM-DD'),
-                                           TO_DATE(:fout, 'YYYY-MM-DD')) AS valor_total
+        SELECT h.numero AS hab_numero, a.nombre AS alojamiento, a.municipio
         FROM   v_catalogo_habitaciones h
         JOIN   v_catalogo_alojamientos a ON a.id_alojamiento = h.id_alojamiento
         WHERE  h.id_habitacion = :hab
-    """, {"hab": req.id_habitacion, "fin": req.fecha_in, "fout": req.fecha_out})[0]
+    """, {"hab": req.id_habitacion})[0]
     reserva = {"id_reserva": id_reserva.getvalue(), "fecha_checkin": req.fecha_in,
-               "fecha_checkout": req.fecha_out, "num_huespedes": req.num_huespedes, **detalle}
+               "fecha_checkout": req.fecha_out, "num_huespedes": req.num_huespedes,
+               "metodo_pago": req.metodo_pago, "valor_pagado": valor_pagado.getvalue(),
+               "pidio_servicio": req.id_servicio is not None,
+               "servicio_agregado": servicio_agregado.getvalue() == 1, **detalle}
     return {"ok": True, "id_reserva": id_reserva.getvalue(), "reserva": reserva}
 
 
@@ -760,8 +773,67 @@ def resumen_gerencia(anio: int = Query(2025), authorization: Optional[str] = Hea
         FETCH FIRST 10 ROWS ONLY
     """)
 
+    # Consultas del script 14 (sobre todas las reservas, no solo las del anio)
+    # 1. Habitacion con mas reservas en temporada alta
+    habitacion_alta = q("""
+        WITH reservas_alta AS (
+          SELECT rh.id_habitacion,
+                 COUNT(DISTINCT rh.id_reserva)            AS reservas,
+                 SUM(rh.noches)                           AS noches_alta,
+                 SUM(rh.noches * rh.valor_noche_aplicado) AS ingresos_alta
+          FROM   reserva_habitacion rh
+          JOIN   reserva   r ON r.id_reserva   = rh.id_reserva
+          JOIN   temporada t ON t.id_temporada = rh.id_temporada
+          WHERE  t.tipo   = 'ALTA'
+            AND  r.estado <> 'CANCELADA'
+          GROUP  BY rh.id_habitacion
+        ),
+        ranking AS (
+          SELECT RANK() OVER (ORDER BY ra.reservas DESC, ra.noches_alta DESC) AS puesto,
+                 a.nombre AS alojamiento, m.nombre AS municipio, h.numero AS habitacion,
+                 h.tipo_habitacion AS tipo, ra.reservas, ra.noches_alta, ra.ingresos_alta
+          FROM   reservas_alta ra
+          JOIN   habitacion  h ON h.id_habitacion  = ra.id_habitacion
+          JOIN   alojamiento a ON a.id_alojamiento = h.id_alojamiento
+          JOIN   municipio   m ON m.id_municipio   = a.id_municipio
+        )
+        SELECT puesto, alojamiento, municipio, habitacion, tipo, reservas, noches_alta, ingresos_alta
+        FROM   ranking
+        WHERE  puesto <= 5
+        ORDER  BY puesto, alojamiento, habitacion
+    """)
+
+    # 2. Cliente con mas reservas en cada municipio
+    clientes_municipio = q("""
+        WITH reservas_cliente AS (
+          SELECT m.nombre AS municipio, c.id_cliente, c.nombre AS cliente, c.documento,
+                 COUNT(DISTINCT r.id_reserva)             AS reservas,
+                 SUM(rh.noches)                           AS noches,
+                 SUM(rh.noches * rh.valor_noche_aplicado) AS gastado
+          FROM   reserva            r
+          JOIN   cliente            c  ON c.id_cliente     = r.id_cliente
+          JOIN   reserva_habitacion rh ON rh.id_reserva    = r.id_reserva
+          JOIN   habitacion         h  ON h.id_habitacion  = rh.id_habitacion
+          JOIN   alojamiento        a  ON a.id_alojamiento = h.id_alojamiento
+          JOIN   municipio          m  ON m.id_municipio   = a.id_municipio
+          WHERE  r.estado <> 'CANCELADA'
+          GROUP  BY m.nombre, c.id_cliente, c.nombre, c.documento
+        ),
+        ranking AS (
+          SELECT rc.*,
+                 RANK() OVER (PARTITION BY rc.municipio
+                              ORDER BY rc.reservas DESC, rc.gastado DESC) AS puesto
+          FROM   reservas_cliente rc
+        )
+        SELECT municipio, cliente, documento, reservas, noches, gastado
+        FROM   ranking
+        WHERE  puesto = 1
+        ORDER  BY municipio
+    """)
+
     return {"anio": anio, "kpis": kpis, "ocupacion": ocupacion, "evolucion": evolucion,
-            "ranking": ranking, "promocion": promocion}
+            "ranking": ranking, "promocion": promocion,
+            "habitacion_alta": habitacion_alta, "clientes_municipio": clientes_municipio}
 
 
 @app.get("/api/gerencia/liquidaciones")
