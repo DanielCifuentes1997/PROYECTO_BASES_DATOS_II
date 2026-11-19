@@ -39,6 +39,19 @@ CREATE TABLE log_errores_reserva (
                                 CONSTRAINT nn_log_fecha     NOT NULL
 );
 
+-- Al borrar la tabla se pierde el permiso que el script 12 le da al auditor.
+-- Si el script se ejecuta otra vez, con los roles ya creados, se le devuelve.
+-- En la primera instalacion el rol todavia no existe (ORA-01919) y no pasa nada.
+BEGIN
+  EXECUTE IMMEDIATE 'GRANT SELECT ON log_errores_reserva TO rol_auditor';
+EXCEPTION
+  WHEN OTHERS THEN
+    IF SQLCODE <> -1919 THEN
+      RAISE;
+    END IF;
+END;
+/
+
 
 -- Especificacion del paquete de la Entrega 3
 CREATE OR REPLACE PACKAGE pkg_transacciones IS
